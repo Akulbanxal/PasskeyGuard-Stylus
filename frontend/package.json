@@ -9,9 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@peculiar/asn1-ecc": "^2.9.4",
+    "@peculiar/asn1-schema": "^2.9.4",
+    "@simplewebauthn/browser": "^14.0.0",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "viem": "^2.56.3"
   },
   "devDependencies": {
     "@types/node": "^20",
