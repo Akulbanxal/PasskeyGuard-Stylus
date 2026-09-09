@@ -341,10 +341,10 @@ export default function App() {
                   >
                     {/* Glow halo behind diagram */}
                     <div style={{
-                      position: 'absolute', width: 480, height: 480,
+                      position: 'absolute', width: 580, height: 580,
                       borderRadius: '50%',
-                      background: 'radial-gradient(circle, rgba(0,212,190,0.12) 0%, rgba(79,142,247,0.08) 50%, transparent 70%)',
-                      filter: 'blur(40px)',
+                      background: 'radial-gradient(circle, rgba(0,212,190,0.14) 0%, rgba(79,142,247,0.08) 50%, transparent 70%)',
+                      filter: 'blur(48px)',
                       pointerEvents: 'none',
                     }} />
                     <OrbitalFlow protocolFeeEth={protocolFeeEth} />
