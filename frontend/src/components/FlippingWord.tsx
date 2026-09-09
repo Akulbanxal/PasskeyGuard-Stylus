@@ -8,19 +8,30 @@ export default function FlippingWord({ words }: { words: string[] }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % words.length);
-    }, 2500);
+    }, 1400);
     return () => clearInterval(timer);
   }, [words]);
 
   return (
-    <span style={{ display: 'inline-block', position: 'relative', width: 'auto', minWidth: '3.5ch', color: 'var(--teal)' }}>
-      <AnimatePresence mode="wait">
+    <span
+      style={{
+        display: 'inline-block',
+        position: 'relative',
+        height: '1.08em',
+        lineHeight: 1.08,
+        overflow: 'hidden',
+        verticalAlign: 'bottom',
+        color: 'var(--teal)',
+        minWidth: '5.5ch',
+      }}
+    >
+      <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={words[index]}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: '100%' }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
+          exit={{ opacity: 0, y: '-100%' }}
+          transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
           style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
         >
           {words[index]}
@@ -29,3 +40,4 @@ export default function FlippingWord({ words }: { words: string[] }) {
     </span>
   );
 }
+

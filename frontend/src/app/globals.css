@@ -324,14 +324,17 @@ button {
 .footer-watermark {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(4rem, 14vw, 12rem);
-  letter-spacing: -0.06em;
-  line-height: 0.85;
+  font-size: clamp(1.75rem, 6.8vw, 5.5rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
   text-transform: uppercase;
-  opacity: 0.04;
+  opacity: 0.06;
   pointer-events: none;
   user-select: none;
   color: var(--text-1);
+  white-space: nowrap;
+  max-width: 100%;
+  text-align: center;
   transition: opacity 0.35s ease;
 }
 
@@ -378,7 +381,7 @@ button {
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }
-  .footer-watermark { font-size: clamp(3rem, 18vw, 6rem); }
+  .footer-watermark { font-size: clamp(1.25rem, 6.5vw, 2.5rem); }
 }
 
 /* ─── Hero heading gradient ──────────────────────────────────────────────── */

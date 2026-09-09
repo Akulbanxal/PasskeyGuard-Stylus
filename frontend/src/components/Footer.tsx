@@ -236,16 +236,16 @@ export default function Footer() {
       <div style={{
         overflow: 'hidden',
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'center',
-        height: 'clamp(4rem, 8vw, 9rem)',
+        height: 'clamp(3rem, 6vw, 5.5rem)',
         borderTop: '1px solid rgba(255,255,255,0.03)',
         marginTop: '0.5rem',
+        padding: '0 1rem',
       }}>
         <div
           className="footer-watermark"
           style={{
-            transform: 'translateY(-8%)',
             background: 'linear-gradient(180deg, var(--text-1) 0%, transparent 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',

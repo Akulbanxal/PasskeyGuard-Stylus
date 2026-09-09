@@ -14,7 +14,6 @@ import { SubscriptionCard } from '../components/SubscriptionCard';
 import ThemeToggle from '../components/ThemeToggle';
 import Spinner, { SpinnerInline } from '../components/Spinner';
 import InfiniteMarquee from '../components/InfiniteMarquee';
-import ChatbotFab from '../components/ChatbotFab';
 import FlippingWord from '../components/FlippingWord';
 import { CONTRACT_ADDRESSES } from '../../lib/chain/config';
 
@@ -916,9 +915,6 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-        
-        {/* ── Chatbot FAB ── */}
-        <ChatbotFab />
       </div>
     </>
   );
