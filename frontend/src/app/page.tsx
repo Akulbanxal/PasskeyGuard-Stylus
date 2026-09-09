@@ -189,9 +189,9 @@ export default function App() {
                 paddingTop: '5rem', position: 'relative',
               }}>
                 <div style={{
-                  maxWidth: 1200, margin: '0 auto', padding: '0 2rem',
-                  display: 'grid', gridTemplateColumns: 'minmax(0, 560px) 1fr',
-                  gap: '4rem', alignItems: 'center',
+                  maxWidth: 1360, margin: '0 auto', padding: '0 2rem',
+                  display: 'grid', gridTemplateColumns: 'minmax(0, 540px) 1fr',
+                  gap: '3rem', alignItems: 'center',
                 }}>
                   {/* Left: Text */}
                   <div>
@@ -236,7 +236,7 @@ export default function App() {
                       }}
                       className="gradient-text-hero"
                     >
-                      Passkey-<br />
+                      Passkey<br />
                       <FlippingWord words={['Secured', 'Verified', 'Sovereign', 'Immutable']} /><br />
                       Web3<br />
                       Identity.
@@ -326,7 +326,7 @@ export default function App() {
                     initial={{ opacity: 0, x: 40 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, delay: 0.3 }}
-                    style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                    style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%' }}
                   >
                     <OrbitalFlow protocolFeeEth={protocolFeeEth} />
                   </motion.div>
