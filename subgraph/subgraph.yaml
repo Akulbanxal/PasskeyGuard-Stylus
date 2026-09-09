@@ -1,0 +1,74 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  # ─── PolicyManager ────────────────────────────────────────────────────────
+  - kind: ethereum
+    name: PolicyManager
+    network: arbitrum-sepolia
+    source:
+      # Replace with deployed PolicyManager address after deployment
+      address: "0x0000000000000000000000000000000000000000"
+      abi: PolicyManager
+      # Replace with the block number of the deployment transaction
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Policy
+        - TrustedRecipient
+        - PolicyEvent
+        - SpendRecord
+        - DailyStats
+      abis:
+        - name: PolicyManager
+          file: ./abis/PolicyManager.json
+      eventHandlers:
+        - event: SingleTxLimitSet(indexed address,uint256,uint256)
+          handler: handleSingleTxLimitSet
+        - event: DailyLimitSet(indexed address,uint256,uint256)
+          handler: handleDailyLimitSet
+        - event: TrustedRecipientSet(indexed address,bool)
+          handler: handleTrustedRecipientSet
+        - event: SpendRecorded(indexed address,uint256,uint256,uint256)
+          handler: handleSpendRecorded
+        - event: PolicyBlocked(indexed address,indexed address,uint256,string)
+          handler: handlePolicyBlocked
+        - event: PolicyApproved(indexed address,indexed address,uint256)
+          handler: handlePolicyApproved
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+      file: ./src/mappings.ts
+
+  # ─── PasskeyAccount ───────────────────────────────────────────────────────
+  - kind: ethereum
+    name: PasskeyAccount
+    network: arbitrum-sepolia
+    source:
+      # Replace with deployed PasskeyAccount address after deployment
+      address: "0x0000000000000000000000000000000000000000"
+      abi: PasskeyAccount
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - PasskeyAccount
+        - Transaction
+        - DailyStats
+      abis:
+        - name: PasskeyAccount
+          file: ./abis/PasskeyAccount.json
+      eventHandlers:
+        - event: PasskeyRegistered(indexed bytes32,indexed bytes32,indexed address)
+          handler: handlePasskeyRegistered
+        - event: TransactionExecuted(indexed address,uint256,bytes,uint256,indexed address)
+          handler: handleTransactionExecuted
+      file: ./src/mappings.ts

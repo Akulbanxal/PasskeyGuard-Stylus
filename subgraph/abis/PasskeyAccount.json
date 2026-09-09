@@ -1,0 +1,133 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {"name": "_verifier", "type": "address"},
+      {"name": "_policyManager", "type": "address"}
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "PasskeyRegistered",
+    "inputs": [
+      {"name": "x", "type": "bytes32", "indexed": true},
+      {"name": "y", "type": "bytes32", "indexed": true},
+      {"name": "account", "type": "address", "indexed": true}
+    ]
+  },
+  {
+    "type": "event",
+    "name": "SignatureVerified",
+    "inputs": [
+      {"name": "digest", "type": "bytes32", "indexed": true},
+      {"name": "account", "type": "address", "indexed": true}
+    ]
+  },
+  {
+    "type": "event",
+    "name": "PolicyBlocked",
+    "inputs": [
+      {"name": "recipient", "type": "address", "indexed": true},
+      {"name": "amount", "type": "uint256", "indexed": false},
+      {"name": "reason", "type": "string", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "name": "PolicyApproved",
+    "inputs": [
+      {"name": "recipient", "type": "address", "indexed": true},
+      {"name": "amount", "type": "uint256", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "name": "TransactionExecuted",
+    "inputs": [
+      {"name": "recipient", "type": "address", "indexed": true},
+      {"name": "amount", "type": "uint256", "indexed": false},
+      {"name": "data", "type": "bytes", "indexed": false},
+      {"name": "nonce", "type": "uint256", "indexed": false},
+      {"name": "executor", "type": "address", "indexed": true}
+    ]
+  },
+  {
+    "type": "event",
+    "name": "Received",
+    "inputs": [
+      {"name": "from", "type": "address", "indexed": true},
+      {"name": "amount", "type": "uint256", "indexed": false}
+    ]
+  },
+  {
+    "type": "function",
+    "name": "registerPasskey",
+    "inputs": [
+      {"name": "x", "type": "bytes32"},
+      {"name": "y", "type": "bytes32"}
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "executeTransaction",
+    "inputs": [
+      {"name": "recipient", "type": "address"},
+      {"name": "amount", "type": "uint256"},
+      {"name": "data", "type": "bytes"},
+      {
+        "name": "auth",
+        "type": "tuple",
+        "components": [
+          {"name": "authenticatorData", "type": "bytes"},
+          {"name": "clientDataJSON", "type": "bytes"},
+          {"name": "r", "type": "bytes32"},
+          {"name": "s", "type": "bytes32"}
+        ]
+      }
+    ],
+    "outputs": [{"name": "executed", "type": "bool"}],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "nonce",
+    "inputs": [],
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pubKeyX",
+    "inputs": [],
+    "outputs": [{"name": "", "type": "bytes32"}],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pubKeyY",
+    "inputs": [],
+    "outputs": [{"name": "", "type": "bytes32"}],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "verifier",
+    "inputs": [],
+    "outputs": [{"name": "", "type": "address"}],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "policyManager",
+    "inputs": [],
+    "outputs": [{"name": "", "type": "address"}],
+    "stateMutability": "view"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  }
+]

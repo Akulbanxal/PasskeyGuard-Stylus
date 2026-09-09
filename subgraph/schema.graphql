@@ -1,0 +1,79 @@
+"""
+PasskeyGuard Subgraph Schema
+Indexes: PolicyManager + PasskeyAccount events on Arbitrum Sepolia
+"""
+
+# ─── PolicyManager Entities ────────────────────────────────────────────────
+
+type Policy @entity {
+  id: ID!                       # always "global" — singleton representing current policy
+  singleTxLimit: BigInt!
+  dailyLimit: BigInt!
+  updatedAt: BigInt!
+  updatedAtBlock: BigInt!
+}
+
+type TrustedRecipient @entity {
+  id: ID!                       # recipient address
+  trusted: Boolean!
+  setAt: BigInt!
+  setAtBlock: BigInt!
+}
+
+type PolicyEvent @entity(immutable: true) {
+  id: Bytes!                    # txHash + logIndex
+  type: String!                 # "APPROVED" | "BLOCKED"
+  account: Bytes!
+  recipient: Bytes!
+  amount: BigInt!
+  reason: String
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type SpendRecord @entity(immutable: true) {
+  id: Bytes!                    # txHash + logIndex
+  account: Bytes!
+  amount: BigInt!
+  dayBucket: BigInt!
+  totalDailySpent: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+# ─── PasskeyAccount Entities ──────────────────────────────────────────────
+
+type PasskeyAccount @entity {
+  id: ID!                       # contract address
+  pubKeyX: Bytes!
+  pubKeyY: Bytes!
+  registeredAt: BigInt!
+  registeredAtBlock: BigInt!
+  totalTransactions: BigInt!
+  totalBlocked: BigInt!
+  transactions: [Transaction!]! @derivedFrom(field: "account")
+}
+
+type Transaction @entity(immutable: true) {
+  id: Bytes!                    # txHash + logIndex
+  account: PasskeyAccount!
+  recipient: Bytes!
+  amount: BigInt!
+  nonce: BigInt!
+  executor: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+# ─── Daily Stats ─────────────────────────────────────────────────────────
+
+type DailyStats @entity {
+  id: ID!                       # date string YYYY-MM-DD
+  date: String!
+  txCount: BigInt!
+  blockedCount: BigInt!
+  totalVolume: BigInt!
+}

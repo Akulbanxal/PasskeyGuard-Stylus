@@ -1,10 +1,12 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { registerPasskey } from '../../lib/webauthn/register';
 import { authenticatePasskey } from '../../lib/webauthn/authenticate';
-import { encodePacked, keccak256, parseEther } from 'viem';
+import { encodePacked, keccak256, parseEther, formatEther } from 'viem';
 import { useTransactionStatus } from '../../hooks/useTransactionStatus';
+import { usePasskeyAccountState } from '../../hooks/usePasskeyAccount';
 import AnimatedBackground from '../components/AnimatedBackground';
 import FeaturesCarousel from '../components/FeaturesCarousel';
 import Footer from '../components/Footer';
@@ -33,6 +35,7 @@ export default function App() {
   const [amountEth, setAmountEth] = useState('100');
   const { status, setStatus, txHash, setTxHash } = useTransactionStatus();
   const [policyPassed, setPolicyPassed] = useState<boolean | null>(null);
+  const { isConnected, walletAddress, balance, singleTxLimit, isRegistered } = usePasskeyAccountState();
 
   const handleRegister = useCallback(async () => {
     setView('register');
@@ -116,16 +119,11 @@ export default function App() {
                     >{l}</a>
                   ))}
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  onClick={handleRegister}
-                  style={{
-                    background: 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
-                    color: '#060608', border: 'none', borderRadius: 9,
-                    padding: '0.5rem 1.25rem', fontWeight: 700,
-                    fontSize: '0.875rem', cursor: 'pointer',
-                  }}
-                >Launch App</motion.button>
+                <ConnectButton
+                  accountStatus="avatar"
+                  chainStatus="icon"
+                  showBalance={false}
+                />
               </motion.nav>
 
               {/* ── Hero Section ── */}

@@ -1,0 +1,17 @@
+{
+  "name": "passkeyguard-subgraph",
+  "version": "0.1.0",
+  "description": "The Graph subgraph for PasskeyGuard — indexes PolicyManager and PasskeyAccount events on Arbitrum Sepolia",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:studio": "graph deploy --studio passkeyguard",
+    "deploy:hosted": "graph deploy --product hosted-service $GRAPH_HOSTED_SERVICE_ACCOUNT/passkeyguard",
+    "create:local": "graph create --node http://localhost:8020/ passkeyguard",
+    "deploy:local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 passkeyguard"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.81.0",
+    "@graphprotocol/graph-ts": "^0.35.1"
+  }
+}
