@@ -5,14 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function FlippingWord({ words }: { words: string[] }) {
   const [index, setIndex] = useState(0);
 
-  // Longest word acts as the invisible "ghost" that sizes the container —
-  // the animated word is overlaid absolutely so the layout NEVER shifts.
-  const longestWord = words.reduce((a, b) => (a.length >= b.length ? a : b), '');
-
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % words.length);
-    }, 1400);
+    }, 1800);
     return () => clearInterval(timer);
   }, [words]);
 
@@ -21,60 +17,34 @@ export default function FlippingWord({ words }: { words: string[] }) {
       style={{
         display: 'inline-block',
         position: 'relative',
-        verticalAlign: 'baseline',
-        lineHeight: 'inherit',
+        verticalAlign: 'top',
+        minWidth: '8.8ch',
+        height: '1.2em',
+        lineHeight: 1.2,
       }}
     >
-      {/* Ghost / phantom — completely transparent, sizes container to longest word, never selectable */}
-      <span
-        aria-hidden="true"
-        style={{
-          opacity: 0,
-          pointerEvents: 'none',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          whiteSpace: 'nowrap',
-          display: 'inline-block',
-          lineHeight: 'inherit',
-        }}
-      >
-        {longestWord}
-      </span>
-
-      {/* Animated word — absolute overlay with explicit vibrant gradient and text fill */}
-      <span
-        style={{
-          position: 'absolute',
-          inset: 0,
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={words[index]}
-            initial={{ opacity: 0, y: '80%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '-80%' }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              display: 'inline-block',
-              whiteSpace: 'nowrap',
-              lineHeight: 'inherit',
-              background: 'linear-gradient(135deg, #00D4BE 0%, #38BDF8 60%, #818CF8 100%)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              color: '#00D4BE',
-              filter: 'drop-shadow(0 0 24px rgba(0, 212, 190, 0.45))',
-            }}
-          >
-            {words[index]}
-          </motion.span>
-        </AnimatePresence>
-      </span>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={words[index]}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            display: 'inline-block',
+            whiteSpace: 'nowrap',
+            lineHeight: 'inherit',
+            background: 'linear-gradient(135deg, #00D4BE 0%, #38BDF8 55%, #818CF8 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            color: '#00D4BE',
+            filter: 'drop-shadow(0 0 24px rgba(0, 212, 190, 0.45))',
+          }}
+        >
+          {words[index]}
+        </motion.span>
+      </AnimatePresence>
     </span>
   );
 }

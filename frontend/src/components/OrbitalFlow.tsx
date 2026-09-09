@@ -13,11 +13,11 @@ const STEPS = [
 ];
 
 /* ─── Geometry ───────────────────────────────────────────────────────────── */
-const W = 560, H = 560;
+const W = 500, H = 460;
 const CX = W / 2, CY = H / 2;
-const RING_R = 168;
-const NODE_R  = 32;
-const LABEL_R = 228;   // radius at which label text anchors
+const RING_R = 145;
+const NODE_R  = 28;
+const LABEL_R = 196;   // radius at which label text anchors
 
 function polar(i: number, r: number) {
   // Node 0 starts at top (-90°), stepping 60° clockwise
@@ -43,8 +43,8 @@ function textAnchor(i: number) {
 function labelOffset(i: number): { dx: number; dy: number } {
   const anchor = textAnchor(i);
   return {
-    dx: anchor === 'start' ? 12 : anchor === 'end' ? -12 : 0,
-    dy: i === 0 ? -12 : i === 3 ? 16 : 4,           // nudge top/bottom nodes
+    dx: anchor === 'start' ? 10 : anchor === 'end' ? -10 : 0,
+    dy: i === 0 ? -12 : i === 3 ? 15 : 4,           // nudge top/bottom nodes
   };
 }
 
@@ -58,14 +58,14 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
 
   return (
     <div style={{
-      background: 'var(--card-bg)',
+      background: 'linear-gradient(160deg, rgba(13, 14, 24, 0.9) 0%, rgba(7, 8, 15, 0.95) 100%)',
       border: '1px solid var(--card-border)',
-      borderRadius: 24, backdropFilter: 'blur(24px)',
+      borderRadius: 22, backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      padding: '1.5rem 1.25rem 1rem',
-      width: '100%', maxWidth: 560,
+      padding: '1.35rem 1.25rem 0.9rem',
+      width: '100%', maxWidth: 490,
       position: 'relative', overflow: 'hidden',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+      boxShadow: '0 24px 60px rgba(0,0,0,0.45)',
     }}>
       {/* Ambient corner glow */}
       <motion.div
@@ -73,31 +73,31 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
         transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', top: -48, left: -48,
-          width: 200, height: 200, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0,212,190,0.16) 0%, transparent 70%)',
-          filter: 'blur(24px)', pointerEvents: 'none',
+          width: 220, height: 220, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(0,212,190,0.18) 0%, transparent 70%)',
+          filter: 'blur(28px)', pointerEvents: 'none',
         }}
       />
 
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '0.75rem', position: 'relative',
+        marginBottom: '0.85rem', position: 'relative',
       }}>
         <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: '0.65rem', fontWeight: 700,
-          letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)',
+          fontFamily: 'var(--font-mono)', fontSize: '0.7rem', fontWeight: 700,
+          letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-2)',
         }}>
           Transaction Flow
         </span>
         <motion.span
-          animate={{ opacity: [1, 0.45, 1] }}
+          animate={{ opacity: [1, 0.5, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-            fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--teal)',
-            background: 'var(--teal-dim)', border: '1px solid rgba(0,212,190,0.22)',
-            borderRadius: 100, padding: '0.2rem 0.65rem',
+            fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--teal)',
+            background: 'var(--teal-dim)', border: '1px solid rgba(0,212,190,0.25)',
+            borderRadius: 100, padding: '0.22rem 0.7rem',
           }}
         >
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
@@ -140,7 +140,7 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
           return (
             <line key={i}
               x1={CX} y1={CY} x2={inner.x} y2={inner.y}
-              stroke={step.color} strokeWidth="0.7" strokeOpacity="0.10"
+              stroke={step.color} strokeWidth="0.8" strokeOpacity="0.12"
             />
           );
         })}
@@ -151,25 +151,25 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
           stroke="url(#ofRingGrad)"
           strokeWidth="1.8"
           strokeDasharray="5 7"
-          opacity="0.7"
+          opacity="0.75"
         />
 
         {/* ── Traveling particle 1 (teal, leads) ── */}
-        <circle r="7" fill="#00D4BE" filter="url(#ofGlow)">
+        <circle r="6.5" fill="#00D4BE" filter="url(#ofGlow)">
           <animateMotion dur="5s" repeatCount="indefinite" rotate="auto">
             <mpath href="#ofMotionPath" />
           </animateMotion>
         </circle>
 
         {/* ── Traveling particle 2 (pink, trails by half cycle) ── */}
-        <circle r="4.5" fill="#EC4899" filter="url(#ofGlowSm)" opacity="0.75">
+        <circle r="4.2" fill="#EC4899" filter="url(#ofGlowSm)" opacity="0.8">
           <animateMotion dur="5s" repeatCount="indefinite" begin="-2.5s" rotate="auto">
             <mpath href="#ofMotionPath" />
           </animateMotion>
         </circle>
 
         {/* ── Traveling particle 3 (purple, quarter offset) ── */}
-        <circle r="3" fill="#8B5CF6" filter="url(#ofGlowSm)" opacity="0.55">
+        <circle r="2.8" fill="#8B5CF6" filter="url(#ofGlowSm)" opacity="0.6">
           <animateMotion dur="5s" repeatCount="indefinite" begin="-1.25s" rotate="auto">
             <mpath href="#ofMotionPath" />
           </animateMotion>
@@ -193,7 +193,7 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
             >
               {/* Outer hover ring */}
               {isAct && (
-                <circle cx={p.x} cy={p.y} r={NODE_R + 11}
+                <circle cx={p.x} cy={p.y} r={NODE_R + 10}
                   fill="none"
                   stroke={step.color}
                   strokeWidth="1.2" strokeOpacity="0.45"
@@ -224,8 +224,8 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
 
               {/* Pulsing status dot (top-right of node) */}
               <circle
-                cx={p.x + NODE_R - 8} cy={p.y - NODE_R + 8}
-                r="5" fill={step.color}
+                cx={p.x + NODE_R - 7} cy={p.y - NODE_R + 7}
+                r="4.5" fill={step.color}
               >
                 <animate attributeName="opacity"
                   values="0.3;1;0.3"
@@ -233,7 +233,7 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
                   begin={`${i * 0.3}s`}
                   repeatCount="indefinite" />
                 <animate attributeName="r"
-                  values="3.8;5.5;3.8"
+                  values="3.5;5.2;3.5"
                   dur="2.4s"
                   begin={`${i * 0.3}s`}
                   repeatCount="indefinite" />
@@ -244,10 +244,10 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
                 x={lp.x + off.dx}
                 y={lp.y + off.dy}
                 textAnchor={anch}
-                fontSize="11"
-                fontWeight="700"
+                fontSize="12"
+                fontWeight="800"
                 fontFamily="var(--font-display)"
-                fill={isAct ? step.color : 'var(--text-2)'}
+                fill={isAct ? step.color : '#F0F2FF'}
               >
                 {step.short}
               </text>
@@ -258,7 +258,7 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
                   x={lp.x + off.dx}
                   y={lp.y + off.dy + 15}
                   textAnchor={anch}
-                  fontSize="8.5"
+                  fontSize="9"
                   fontFamily="var(--font-mono)"
                   fill="var(--text-3)"
                   opacity="0.9"
@@ -271,13 +271,13 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
         })}
 
         {/* ── Center hub ── */}
-        <circle cx={CX} cy={CY} r="36"
+        <circle cx={CX} cy={CY} r="35"
           fill="var(--bg-2)"
           stroke="rgba(0,212,190,0.35)"
           strokeWidth="1.2" />
-        <text x={CX} y={CY - 8}
+        <text x={CX} y={CY - 7}
           textAnchor="middle"
-          fontSize="10.5" fontFamily="var(--font-mono)" fontWeight="800"
+          fontSize="11" fontFamily="var(--font-mono)" fontWeight="800"
           fill="#00D4BE" letterSpacing="1">
           P·G
         </text>
@@ -285,11 +285,11 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
           textAnchor="middle"
           fontSize="8" fontFamily="var(--font-mono)"
           fill="var(--text-3)" letterSpacing="0.5">
-          WEB3
+          STYLUS
         </text>
         {/* Center breathing dot */}
-        <circle cx={CX} cy={CY} r="4" fill="rgba(0,212,190,0.65)">
-          <animate attributeName="r"  values="3;5.5;3" dur="2.2s" repeatCount="indefinite"/>
+        <circle cx={CX} cy={CY} r="3.5" fill="rgba(0,212,190,0.65)">
+          <animate attributeName="r"  values="2.5;5;2.5" dur="2.2s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
         </circle>
       </svg>
