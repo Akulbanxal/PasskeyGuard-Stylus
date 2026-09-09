@@ -67,7 +67,7 @@ dataSources:
       eventHandlers:
         - event: PasskeyRegistered(indexed bytes32,indexed bytes32,indexed address)
           handler: handlePasskeyRegistered
-        - event: TransactionExecuted(indexed address,uint256,bytes,uint256)
+        - event: TransactionExecuted(indexed address,uint256,bytes,uint256,indexed address)
           handler: handleTransactionExecuted
         - event: FeeCollected(indexed address,indexed address,uint256,uint256)
           handler: handleFeeCollected

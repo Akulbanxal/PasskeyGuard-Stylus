@@ -12,17 +12,17 @@ import {
   PolicyBlocked,
   PolicyApproved,
   OwnershipTransferred,
-} from "../../generated/PolicyManager/PolicyManager";
+} from "../generated/PolicyManager/PolicyManager";
 
 import {
   PasskeyRegistered,
   TransactionExecuted,
   FeeCollected,
-} from "../../generated/PasskeyAccount/PasskeyAccount";
+} from "../generated/PasskeyAccount/PasskeyAccount";
 
 import {
   SubscriptionRenewed,
-} from "../../generated/SubscriptionManager/SubscriptionManager";
+} from "../generated/SubscriptionManager/SubscriptionManager";
 
 import {
   Policy,
@@ -34,7 +34,7 @@ import {
   Transaction,
   FeeRecord,
   Subscription,
-} from "../../generated/schema";
+} from "../generated/schema";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
