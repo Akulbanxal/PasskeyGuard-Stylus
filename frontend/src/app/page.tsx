@@ -245,7 +245,7 @@ export default function App() {
                       transition={{ duration: 0.7, delay: 0.18 }}
                       className="hero-h1 gradient-text-hero"
                     >
-                      Passkey-<br />
+                      Passkey<br />
                       <FlippingWord words={['Secured', 'Verified', 'Sovereign', 'Immutable']} /><br />
                       Web3<br />
                       <span style={{ opacity: 0.55 }}>Identity.</span>

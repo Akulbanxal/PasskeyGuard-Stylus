@@ -21,37 +21,55 @@ export default function FlippingWord({ words }: { words: string[] }) {
       style={{
         display: 'inline-block',
         position: 'relative',
-        color: 'var(--teal)',
-        verticalAlign: 'bottom',
+        verticalAlign: 'baseline',
         lineHeight: 'inherit',
       }}
     >
-      {/* Ghost / phantom — invisible, purely sizes the container to the longest word */}
-      <span aria-hidden style={{ visibility: 'hidden', whiteSpace: 'nowrap' }}>
+      {/* Ghost / phantom — completely transparent, sizes container to longest word, never selectable */}
+      <span
+        aria-hidden="true"
+        style={{
+          opacity: 0,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          whiteSpace: 'nowrap',
+          display: 'inline-block',
+          lineHeight: 'inherit',
+        }}
+      >
         {longestWord}
       </span>
 
-      {/* Animated word — absolute so it never affects layout */}
+      {/* Animated word — absolute overlay with explicit vibrant gradient and text fill */}
       <span
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          inset: 0,
           overflow: 'hidden',
           display: 'flex',
-          alignItems: 'flex-end',
+          alignItems: 'center',
+          pointerEvents: 'none',
         }}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={words[index]}
-            initial={{ opacity: 0, y: '100%' }}
+            initial={{ opacity: 0, y: '80%' }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '-100%' }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            style={{ display: 'inline-block', whiteSpace: 'nowrap', lineHeight: 'inherit' }}
+            exit={{ opacity: 0, y: '-80%' }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              display: 'inline-block',
+              whiteSpace: 'nowrap',
+              lineHeight: 'inherit',
+              background: 'linear-gradient(135deg, #00D4BE 0%, #38BDF8 60%, #818CF8 100%)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              color: '#00D4BE',
+              filter: 'drop-shadow(0 0 24px rgba(0, 212, 190, 0.45))',
+            }}
           >
             {words[index]}
           </motion.span>
