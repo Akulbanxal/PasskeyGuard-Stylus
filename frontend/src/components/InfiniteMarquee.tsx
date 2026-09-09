@@ -1,94 +1,33 @@
 'use client';
 import { motion } from 'framer-motion';
 
-/* ─── Brand logos as inline SVGs ─────────────────────────────────────────── */
+/* ─── Real official brand logos via Simple Icons CDN ─────────────────────
+   CDN: https://cdn.simpleicons.org/{slug}/{hex-color}
+   Serving official SVG logos from the open-source simpleicons.org project.
+──────────────────────────────────────────────────────────────────────────── */
 
-const ArbitrumLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="Arbitrum">
-    <path d="M12 2L2 7.5V16.5L12 22L22 16.5V7.5L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M8 15L12 8L16 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M9.5 12.5H14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
+interface Brand {
+  label: string;
+  /** Simple Icons slug — https://simpleicons.org */
+  slug: string;
+  /** Accent colour shown on hover (hex, no #) */
+  accent: string;
+  /** Default icon tint (hex, no #) — used as CDN color param */
+  tint: string;
+}
 
-const EthereumLogo = () => (
-  <svg width="18" height="22" viewBox="0 0 32 52" fill="none" aria-label="Ethereum">
-    <path d="M16 0L0 26.5L16 36L32 26.5L16 0Z" fill="currentColor" fillOpacity="0.85"/>
-    <path d="M16 39.5L0 30L16 52L32 30L16 39.5Z" fill="currentColor"/>
-  </svg>
-);
-
-const WebAuthnLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="WebAuthn">
-    <ellipse cx="9" cy="7" rx="4" ry="5" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M5 17c0-2.21 1.79-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M17 11v2m0 4h.01M14 13a3 3 0 1 1 6 0v1h-6v-1Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const RustLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="Rust">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
-    <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
-    {[0,45,90,135,180,225,270,315].map((deg, i) => (
-      <line
-        key={i}
-        x1={12 + 5 * Math.cos((deg * Math.PI) / 180)}
-        y1={12 + 5 * Math.sin((deg * Math.PI) / 180)}
-        x2={12 + 7 * Math.cos((deg * Math.PI) / 180)}
-        y2={12 + 7 * Math.sin((deg * Math.PI) / 180)}
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    ))}
-  </svg>
-);
-
-const SafeLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="Safe">
-    <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
-    <line x1="1" y1="9" x2="3" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="1" y1="15" x2="3" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="21" y1="9" x2="23" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="21" y1="15" x2="23" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-const P256Logo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="P-256 ECDSA">
-    <path d="M12 2l3.5 6H20l-4 5 2 6-6-3.5L6 19l2-6-4-5h4.5L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-  </svg>
-);
-
-const StylusLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="Stylus WASM">
-    <rect x="2" y="3" width="20" height="18" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M7 8l3 4-3 4M13 16h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const FIDOLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="FIDO2">
-    <path d="M12 3C8.69 3 6 5.69 6 9c0 2.12 1.1 3.99 2.76 5.09L8 21h8l-.76-6.91C16.9 12.99 18 11.12 18 9c0-3.31-2.69-6-6-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M9 21h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-/* ─── Brand items ─────────────────────────────────────────────────────────── */
-const brands = [
-  { label: 'Arbitrum',  Icon: ArbitrumLogo, color: '#4F8EF7' },
-  { label: 'Ethereum',  Icon: EthereumLogo, color: '#8B5CF6' },
-  { label: 'Stylus',    Icon: StylusLogo,   color: '#00D4BE' },
-  { label: 'WebAuthn',  Icon: WebAuthnLogo, color: '#10B981' },
-  { label: 'Rust',      Icon: RustLogo,     color: '#F59E0B' },
-  { label: 'FIDO2',     Icon: FIDOLogo,     color: '#EC4899' },
-  { label: 'Safe',      Icon: SafeLogo,     color: '#00D4BE' },
-  { label: 'P-256',     Icon: P256Logo,     color: '#4F8EF7' },
+const brands: Brand[] = [
+  { label: 'Arbitrum',    slug: 'arbitrum',    accent: '#28A0F0', tint: '9ca3af' },
+  { label: 'Ethereum',    slug: 'ethereum',    accent: '#627EEA', tint: '9ca3af' },
+  { label: 'Stylus',      slug: 'webassembly', accent: '#9c7cfe', tint: '9ca3af' },
+  { label: 'Optimism',    slug: 'optimism',    accent: '#FF0420', tint: '9ca3af' },
+  { label: 'Polygon',     slug: 'polygon',     accent: '#7B3FE4', tint: '9ca3af' },
+  { label: 'Rust',        slug: 'rust',        accent: '#F74C00', tint: '9ca3af' },
+  { label: 'Safe',        slug: 'gnosis',      accent: '#00856E', tint: '9ca3af' },
+  { label: 'React',       slug: 'react',       accent: '#61DAFB', tint: '9ca3af' },
 ];
 
-/* Quadruple for seamless infinite loop */
+/* Quadruple the array for a seamless infinite loop */
 const items = [...brands, ...brands, ...brands, ...brands];
 
 export default function InfiniteMarquee() {
@@ -97,7 +36,7 @@ export default function InfiniteMarquee() {
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       position: 'relative',
-      padding: '2rem 0',
+      padding: '1.75rem 0',
       borderTop: '1px solid var(--border)',
       borderBottom: '1px solid var(--border)',
       background: 'var(--bg-1)',
@@ -107,52 +46,77 @@ export default function InfiniteMarquee() {
     }}>
       {/* Fade edges */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, width: '12%', height: '100%',
+        position: 'absolute', top: 0, left: 0, width: '10%', height: '100%',
         background: 'linear-gradient(to right, var(--bg-1), transparent)',
         zIndex: 2, pointerEvents: 'none',
       }} />
       <div style={{
-        position: 'absolute', top: 0, right: 0, width: '12%', height: '100%',
+        position: 'absolute', top: 0, right: 0, width: '10%', height: '100%',
         background: 'linear-gradient(to left, var(--bg-1), transparent)',
         zIndex: 2, pointerEvents: 'none',
       }} />
 
       <motion.div
         animate={{ x: ['0%', '-50%'] }}
-        transition={{ duration: 32, ease: 'linear', repeat: Infinity }}
+        transition={{ duration: 38, ease: 'linear', repeat: Infinity }}
         style={{ display: 'flex', gap: '3.5rem', paddingRight: '3.5rem', alignItems: 'center' }}
       >
-        {items.map((brand, i) => {
-          const { Icon } = brand;
-          return (
-            <div
-              key={i}
-              title={brand.label}
+        {items.map((brand, i) => (
+          <div
+            key={i}
+            title={brand.label}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.55rem',
+              flexShrink: 0,
+              cursor: 'default',
+              opacity: 0.55,
+              transition: 'opacity 0.25s, transform 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.transform = 'scale(1.06)';
+              const img = e.currentTarget.querySelector('img') as HTMLImageElement | null;
+              if (img) img.src = `https://cdn.simpleicons.org/${brand.slug}/${brand.accent.slice(1)}`;
+              const label = e.currentTarget.querySelector('span') as HTMLSpanElement | null;
+              if (label) label.style.color = brand.accent;
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.opacity = '0.55';
+              e.currentTarget.style.transform = 'scale(1)';
+              const img = e.currentTarget.querySelector('img') as HTMLImageElement | null;
+              if (img) img.src = `https://cdn.simpleicons.org/${brand.slug}/${brand.tint}`;
+              const label = e.currentTarget.querySelector('span') as HTMLSpanElement | null;
+              if (label) label.style.color = 'var(--text-2)';
+            }}
+          >
+            {/* Official logo image via Simple Icons CDN */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://cdn.simpleicons.org/${brand.slug}/${brand.tint}`}
+              alt={brand.label}
+              width={24}
+              height={24}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                color: 'var(--text-3)',
-                transition: 'color 0.25s',
-                cursor: 'default',
+                objectFit: 'contain',
+                transition: 'filter 0.25s',
                 flexShrink: 0,
               }}
-              onMouseEnter={e => { e.currentTarget.style.color = brand.color; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-3)'; }}
-            >
-              <Icon />
-              <span style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                fontSize: '1.1rem',
-                letterSpacing: '-0.02em',
-                whiteSpace: 'nowrap',
-              }}>
-                {brand.label}
-              </span>
-            </div>
-          );
-        })}
+            />
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: '1.05rem',
+              letterSpacing: '-0.02em',
+              color: 'var(--text-2)',
+              whiteSpace: 'nowrap',
+              transition: 'color 0.25s',
+            }}>
+              {brand.label}
+            </span>
+          </div>
+        ))}
       </motion.div>
     </div>
   );

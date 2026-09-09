@@ -232,21 +232,18 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Brand watermark — LiquidPass style */}
+      {/* Brand watermark — fully visible, no clip */}
       <div style={{
-        overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: 'clamp(3rem, 6vw, 5.5rem)',
         borderTop: '1px solid rgba(255,255,255,0.03)',
-        marginTop: '0.5rem',
-        padding: '0 1rem',
+        padding: '1.5rem 2rem 2rem',
       }}>
         <div
           className="footer-watermark"
           style={{
-            background: 'linear-gradient(180deg, var(--text-1) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, var(--text-1) 40%, transparent 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
