@@ -1,0 +1,62 @@
+name: Deploy Next.js to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies & Build static export
+        cwd: frontend
+        env:
+          NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC_URL: "https://sepolia-rollup.arbitrum.io/rpc"
+          NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: "0a2662ef1b92e6471d69bb02b2cfd9a4"
+          NEXT_PUBLIC_VERIFIER_ADDRESS: "0x78c48db6f86eb3b01eb57b1a6b589ead08ac8901"
+          NEXT_PUBLIC_SUBSCRIPTION_MANAGER_ADDRESS: "0x222aceDD00cedF1F301cE154dA39f8efCea01d3F"
+          NEXT_PUBLIC_POLICY_MANAGER_ADDRESS: "0x2aB2E67dE5eE8F43CB0167E8178fD56f8DeFb733"
+          NEXT_PUBLIC_PASSKEY_ACCOUNT_ADDRESS: "0x3800D4D57C8E18ee17f7bf982D4C5E70Ad0EF4b0"
+          NEXT_PUBLIC_DEMO_TARGET_ADDRESS: "0xc2b484852fe7EaE1aB94e0262bCC6518F41FaDE9"
+          NEXT_PUBLIC_TREASURY_WALLET_ADDRESS: "0x66CfD0E3a6b190C7d64aF703989BB578834E9580"
+          NEXT_PUBLIC_TX_FEE_WEI: "100000000000000"
+          NEXT_PUBLIC_MONTHLY_FEE_WEI: "1000000000000000"
+          NEXT_PUBLIC_PINATA_GATEWAY: "https://gateway.pinata.cloud"
+        run: |
+          npm ci --legacy-peer-deps
+          npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "frontend/out"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
