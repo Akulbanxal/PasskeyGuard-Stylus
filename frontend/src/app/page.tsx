@@ -184,62 +184,71 @@ export default function App() {
               </motion.nav>
 
               {/* ── Hero Section ── */}
-              <section style={{
-                minHeight: '100vh', display: 'flex', alignItems: 'center',
-                paddingTop: '5rem', position: 'relative',
-              }}>
+              <section className="hero-full" style={{ paddingTop: '4.5rem' }}>
+                {/* Animated beam sweep */}
+                <div className="hero-beam" />
+
+                {/* Hero horizontal line accents */}
                 <div style={{
-                  maxWidth: 1200, margin: '0 auto', padding: '0 2rem',
-                  display: 'grid', gridTemplateColumns: 'minmax(0, 560px) 1fr',
-                  gap: '4rem', alignItems: 'center',
-                }}>
-                  {/* Left: Text */}
+                  position: 'absolute', top: '50%', left: 0, right: 0,
+                  height: 1, background: 'linear-gradient(90deg, transparent, rgba(0,212,190,0.08), rgba(79,142,247,0.06), transparent)',
+                  pointerEvents: 'none',
+                }} />
+
+                <div className="hero-inner">
+                  {/* Left: Text column */}
                   <div>
-                    {/* Live network badge row */}
+                    {/* Live badge row */}
                     <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, delay: 0.1 }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}
+                      initial={{ opacity: 0, y: -12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.45, delay: 0.1 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2.25rem', flexWrap: 'wrap' }}
                     >
                       <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                        fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em',
+                        display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+                        fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em',
                         textTransform: 'uppercase', color: 'var(--teal)',
-                        background: 'var(--teal-dim)',
+                        background: 'rgba(0,212,190,0.1)',
                         border: '1px solid rgba(0,212,190,0.28)',
-                        borderRadius: 100, padding: '0.32rem 0.9rem',
+                        borderRadius: 100, padding: '0.35rem 0.95rem',
                         cursor: 'default', fontFamily: 'var(--font-mono)',
+                        boxShadow: '0 0 20px rgba(0,212,190,0.15)',
                       }}>
                         ✦ Arbitrum Stylus
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                        fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: 'var(--font-mono)',
+                      }}>
                         <motion.div
-                          animate={{ opacity: [1, 0.3, 1] }}
+                          animate={{ opacity: [1, 0.2, 1], scale: [1, 1.3, 1] }}
                           transition={{ duration: 1.8, repeat: Infinity }}
                           style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', flexShrink: 0 }}
                         />
                         LIVE // SEPOLIA
                       </span>
+                      <span style={{
+                        fontSize: '0.65rem', color: 'var(--text-3)',
+                        fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
+                        background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
+                        borderRadius: 100, padding: '0.3rem 0.85rem',
+                      }}>
+                        P-256 ECDSA
+                      </span>
                     </motion.div>
 
-                    {/* H1 */}
+                    {/* H1 — massive */}
                     <motion.h1
-                      initial={{ opacity: 0, y: 30 }}
+                      initial={{ opacity: 0, y: 40 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.65, delay: 0.2 }}
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(3rem, 6.5vw, 5.5rem)',
-                        fontWeight: 900, letterSpacing: '-0.055em',
-                        lineHeight: 0.92, marginBottom: '1.75rem',
-                      }}
-                      className="gradient-text-hero"
+                      transition={{ duration: 0.7, delay: 0.18 }}
+                      className="hero-h1 gradient-text-hero"
                     >
                       Passkey-<br />
                       <FlippingWord words={['Secured', 'Verified', 'Sovereign', 'Immutable']} /><br />
                       Web3<br />
-                      Identity.
+                      <span style={{ opacity: 0.55 }}>Identity.</span>
                     </motion.h1>
 
                     {/* Subtext */}
@@ -247,13 +256,11 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.35 }}
-                      style={{
-                        color: 'var(--text-2)', fontSize: '1.05rem',
-                        lineHeight: 1.75, marginBottom: '2.5rem', maxWidth: 420,
-                      }}
+                      className="hero-sub"
                     >
-                      Your biometric signs. The chain decides. No seed phrases, no custody —
-                      just your fingerprint and Arbitrum Stylus P-256 ECDSA on-chain.
+                      Your biometric signs. The chain decides. No seed phrases,
+                      no custody — just your fingerprint and Arbitrum Stylus P-256
+                      ECDSA on-chain.
                     </motion.p>
 
                     {/* CTAs */}
@@ -261,18 +268,18 @@ export default function App() {
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.48 }}
-                      style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '3rem' }}
+                      style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '3.5rem' }}
                     >
                       <motion.button
-                        whileHover={{ scale: 1.03, boxShadow: '0 12px 40px rgba(0,212,190,0.45)' }}
+                        whileHover={{ scale: 1.04, boxShadow: '0 16px 50px rgba(0,212,190,0.55)' }}
                         whileTap={{ scale: 0.97 }}
                         onClick={handleRegister}
                         style={{
-                          background: 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
-                          color: '#060608', border: 'none', borderRadius: 12,
-                          padding: '0.9rem 1.85rem', fontWeight: 800,
-                          fontSize: '1rem', cursor: 'pointer',
-                          boxShadow: '0 8px 28px rgba(0,212,190,0.28)',
+                          background: 'linear-gradient(135deg, #00D4BE 0%, #4F8EF7 100%)',
+                          color: '#04040A', border: 'none', borderRadius: 14,
+                          padding: '1rem 2.25rem', fontWeight: 800,
+                          fontSize: 'clamp(0.9rem, 1.2vw, 1.1rem)', cursor: 'pointer',
+                          boxShadow: '0 8px 32px rgba(0,212,190,0.32)',
                           display: 'flex', alignItems: 'center', gap: '0.5rem',
                           fontFamily: 'var(--font-display)',
                           letterSpacing: '-0.02em',
@@ -283,28 +290,28 @@ export default function App() {
                       <motion.a
                         href="https://github.com/Akulbanxal/PasskeyGuard-Stylus"
                         target="_blank" rel="noreferrer"
-                        whileHover={{ scale: 1.03, borderColor: 'var(--border-hover)' }}
+                        whileHover={{ scale: 1.04, borderColor: 'rgba(255,255,255,0.2)' }}
                         whileTap={{ scale: 0.97 }}
                         style={{
-                          background: 'var(--bg-2)',
+                          background: 'rgba(255,255,255,0.04)',
                           color: 'var(--text-1)', border: '1px solid var(--border)',
-                          borderRadius: 12, padding: '0.9rem 1.85rem',
-                          fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
+                          borderRadius: 14, padding: '1rem 2.25rem',
+                          fontWeight: 600, fontSize: 'clamp(0.9rem, 1.2vw, 1.1rem)', cursor: 'pointer',
                           textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem',
-                          transition: 'all 0.2s',
+                          transition: 'all 0.2s', backdropFilter: 'blur(8px)',
                         }}
                       >
                         View on GitHub →
                       </motion.a>
                     </motion.div>
 
-                    {/* Stats row */}
+                    {/* Stats chips */}
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ duration: 0.6, delay: 0.6 }}
+                      transition={{ duration: 0.6, delay: 0.62 }}
                       style={{
-                        display: 'flex', gap: '2rem', flexWrap: 'wrap',
+                        display: 'flex', gap: '1.5rem', flexWrap: 'wrap',
                         paddingTop: '2rem', borderTop: '1px solid var(--border)',
                       }}
                     >
@@ -312,22 +319,34 @@ export default function App() {
                         { label: 'Signature', value: 'P-256 ECDSA' },
                         { label: 'Runtime', value: 'Stylus WASM' },
                         { label: 'Auth', value: 'WebAuthn L2' },
+                        { label: 'Chain', value: 'Arbitrum' },
                       ].map(stat => (
                         <div key={stat.label}>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)' }}>{stat.label}</div>
-                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--teal)', fontFamily: 'var(--font-mono)' }}>{stat.value}</div>
+                          <div style={{ fontSize: '0.58rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: '0.35rem', fontFamily: 'var(--font-mono)' }}>{stat.label}</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--teal)', fontFamily: 'var(--font-mono)' }}>{stat.value}</div>
                         </div>
                       ))}
                     </motion.div>
                   </div>
 
-                  {/* Right: Orbital Flow Diagram */}
+                  {/* Right: Orbital Flow Diagram — large */}
                   <motion.div
-                    initial={{ opacity: 0, x: 40 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.7, delay: 0.3 }}
-                    style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                    initial={{ opacity: 0, x: 60, scale: 0.92 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    style={{
+                      display: 'flex', justifyContent: 'center', alignItems: 'center',
+                      position: 'relative',
+                    }}
                   >
+                    {/* Glow halo behind diagram */}
+                    <div style={{
+                      position: 'absolute', width: 480, height: 480,
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle, rgba(0,212,190,0.12) 0%, rgba(79,142,247,0.08) 50%, transparent 70%)',
+                      filter: 'blur(40px)',
+                      pointerEvents: 'none',
+                    }} />
                     <OrbitalFlow protocolFeeEth={protocolFeeEth} />
                   </motion.div>
                 </div>

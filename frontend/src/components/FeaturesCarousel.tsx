@@ -77,7 +77,7 @@ export default function FeaturesCarousel() {
   return (
     <section id="features" style={{ padding: '5rem 0 6rem', position: 'relative', zIndex: 1 }}>
       {/* Section header */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 2rem', marginBottom: '3.5rem', textAlign: 'center' }}>
+      <div style={{ width: '100%', padding: '0 5vw', marginBottom: '3.5rem', textAlign: 'center' }}>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}

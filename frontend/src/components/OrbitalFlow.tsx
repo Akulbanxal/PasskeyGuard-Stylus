@@ -13,11 +13,11 @@ const STEPS = [
 ];
 
 /* ─── Geometry ───────────────────────────────────────────────────────────── */
-const W = 440, H = 440;
+const W = 560, H = 560;
 const CX = W / 2, CY = H / 2;
-const RING_R = 132;
-const NODE_R  = 27;
-const LABEL_R = 183;   // radius at which label text anchors
+const RING_R = 168;
+const NODE_R  = 32;
+const LABEL_R = 228;   // radius at which label text anchors
 
 function polar(i: number, r: number) {
   // Node 0 starts at top (-90°), stepping 60° clockwise
@@ -60,10 +60,10 @@ export default function OrbitalFlow({ protocolFeeEth = '0.0001' }: { protocolFee
     <div style={{
       background: 'var(--card-bg)',
       border: '1px solid var(--card-border)',
-      borderRadius: 20, backdropFilter: 'blur(24px)',
+      borderRadius: 24, backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      padding: '1.25rem 1rem 0.75rem',
-      width: '100%', maxWidth: 440,
+      padding: '1.5rem 1.25rem 1rem',
+      width: '100%', maxWidth: 560,
       position: 'relative', overflow: 'hidden',
     }}>
       {/* Ambient corner glow */}
