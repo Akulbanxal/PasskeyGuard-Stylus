@@ -22,7 +22,10 @@ export default function FlippingWord({ words }: { words: string[] }) {
         overflow: 'hidden',
         verticalAlign: 'bottom',
         color: 'var(--teal)',
+        /* Fixed width — prevents ANY reflow in the parent h1 when words cycle */
+        width: '5.5ch',
         minWidth: '5.5ch',
+        maxWidth: '5.5ch',
       }}
     >
       <AnimatePresence mode="popLayout" initial={false}>

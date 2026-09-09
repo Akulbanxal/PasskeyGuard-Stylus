@@ -188,11 +188,21 @@ export default function FeaturesCarousel() {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 position: 'relative',
               }}>
-                <div style={{
-                  height: 2, borderRadius: 2,
-                  background: `linear-gradient(90deg, ${f.accent}, transparent)`,
-                  width: '55%',
-                }} />
+                {/* Liquid-pass inspired animated fill bar */}
+                <div style={{ position: 'relative', width: '55%', height: 2, borderRadius: 2, background: `${f.accent}20` }}>
+                  <motion.div
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    viewport={{ once: false, amount: 0.5 }}
+                    transition={{ duration: 1.1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      position: 'absolute', inset: 0,
+                      borderRadius: 2,
+                      background: `linear-gradient(90deg, ${f.accent}, ${f.accent}70)`,
+                      transformOrigin: 'left',
+                    }}
+                  />
+                </div>
                 <span style={{
                   fontSize: '0.68rem', fontWeight: 700,
                   color: f.accent, letterSpacing: '0.06em',

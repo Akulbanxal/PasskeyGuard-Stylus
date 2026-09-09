@@ -189,7 +189,7 @@ export default function App() {
               }}>
                 <div style={{
                   maxWidth: 1200, margin: '0 auto', padding: '0 2rem',
-                  display: 'grid', gridTemplateColumns: '1fr 1fr',
+                  display: 'grid', gridTemplateColumns: 'minmax(0, 560px) 1fr',
                   gap: '4rem', alignItems: 'center',
                 }}>
                   {/* Left: Text */}
@@ -334,9 +334,21 @@ export default function App() {
                       WebkitBackdropFilter: 'blur(24px)',
                       padding: '1.75rem', width: '100%', maxWidth: 400,
                       display: 'flex', flexDirection: 'column', gap: '0.875rem',
+                      position: 'relative', overflow: 'hidden',
                     }}>
+                      {/* Ambient corner glow — liquid-pass inspired */}
+                      <motion.div
+                        animate={{ opacity: [0.4, 0.75, 0.4], scale: [1, 1.08, 1] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                        style={{
+                          position: 'absolute', top: -40, left: -40,
+                          width: 180, height: 180, borderRadius: '50%',
+                          background: 'radial-gradient(circle, rgba(0,212,190,0.18) 0%, transparent 70%)',
+                          filter: 'blur(20px)', pointerEvents: 'none',
+                        }}
+                      />
                       {/* Card header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', position: 'relative' }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
                           Transaction Flow
                         </div>
@@ -364,9 +376,25 @@ export default function App() {
                             background: `${item.color}0A`,
                             border: `1px solid ${item.color}22`,
                             borderRadius: 10, cursor: 'default',
-                            transition: 'border-color 0.2s',
+                            transition: 'border-color 0.2s, background 0.2s',
+                            position: 'relative', overflow: 'hidden',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.borderColor = `${item.color}55`;
+                            e.currentTarget.style.background = `${item.color}16`;
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.borderColor = `${item.color}22`;
+                            e.currentTarget.style.background = `${item.color}0A`;
                           }}
                         >
+                          {/* Scan-line sweep on hover — liquid-pass inspired terminal effect */}
+                          <div style={{
+                            position: 'absolute', inset: 0, pointerEvents: 'none',
+                            background: `linear-gradient(90deg, transparent 0%, ${item.color}12 50%, transparent 100%)`,
+                            opacity: 0,
+                            transition: 'opacity 0.3s',
+                          }} className="scanline-sweep" />
                           <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{item.icon}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-1)' }}>{item.step}</div>
