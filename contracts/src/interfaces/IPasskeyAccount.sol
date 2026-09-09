@@ -9,10 +9,10 @@ interface IPasskeyAccount {
         bytes32 s;
     }
 
-    event SignatureVerified(bytes32 digest);
-    event PolicyApproved(address recipient, uint256 amount);
-    event PolicyBlocked(address recipient, uint256 amount, string reason);
-    event TransactionExecuted(address recipient, uint256 amount, bytes data);
+    event SignatureVerified(bytes32 indexed digest, address indexed account);
+    event PolicyApproved(address indexed recipient, uint256 amount);
+    event PolicyBlocked(address indexed recipient, uint256 amount, string reason);
+    event TransactionExecuted(address indexed recipient, uint256 amount, bytes data, uint256 nonce);
 
     function registerPasskey(bytes32 x, bytes32 y) external;
     function executeTransaction(
@@ -20,7 +20,7 @@ interface IPasskeyAccount {
         uint256 amount,
         bytes calldata data,
         WebAuthnAuth calldata auth
-    ) external returns (bool executed);
+    ) external payable returns (bool executed);
 
     function nonce() external view returns (uint256);
 }

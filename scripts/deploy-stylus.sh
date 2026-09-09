@@ -54,6 +54,7 @@ echo "🚀 Deploying Secp256r1Verifier to Arbitrum Sepolia..."
 DEPLOY_OUTPUT=$(cargo stylus deploy \
   --private-key "$PRIVATE_KEY" \
   --endpoint "$RPC" \
+  --no-verify \
   2>&1)
 
 echo "$DEPLOY_OUTPUT"

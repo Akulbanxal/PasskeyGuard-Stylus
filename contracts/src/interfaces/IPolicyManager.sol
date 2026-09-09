@@ -9,8 +9,9 @@ interface IPolicyManager {
         address recipient,
         uint256 amount,
         bytes calldata data
-    ) external view returns (bool allowed, string memory reason);
+    ) external returns (bool allowed, string memory reason);
 
+    function recordSpend(address account, uint256 amount) external;
     function setSingleTxLimit(uint256 newLimit) external;
     function setDailyLimit(uint256 newLimit) external;
     function setTrustedRecipient(address recipient, bool trusted) external;

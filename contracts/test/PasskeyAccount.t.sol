@@ -104,7 +104,7 @@ contract PasskeyAccountTest is Test {
         vm.deal(address(account), 0);
 
         // Trying to send ETH when it has 0 should revert at the execution step
-        vm.expectRevert("PasskeyAccount: execution failed");
+        vm.expectRevert("PasskeyAccount: insufficient balance for tx + fee");
         account.executeTransaction(address(target), 0.5 ether, "", auth);
         
         // Nonce shouldn't increment, target shouldn't receive funds

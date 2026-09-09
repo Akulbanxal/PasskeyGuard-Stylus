@@ -53,6 +53,7 @@ echo "   Monthly Fee: 0.001 ETH ($MONTHLY_FEE_WEI wei)"
 SM_OUTPUT=$(forge create src/SubscriptionManager.sol:SubscriptionManager \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC" \
+  --broadcast \
   --constructor-args "$TREASURY_WALLET_ADDRESS" "$MONTHLY_FEE_WEI" \
   2>&1)
 
@@ -70,6 +71,7 @@ DAILY_LIMIT_WEI=$(cast to-wei 5000)        # 5000 ETH daily limit
 PM_OUTPUT=$(forge create src/PolicyManager.sol:PolicyManager \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC" \
+  --broadcast \
   --constructor-args "$DEPLOYER" "$SINGLE_TX_LIMIT_WEI" "$DAILY_LIMIT_WEI" \
   2>&1)
 
@@ -90,6 +92,7 @@ echo "   Fee Recipient (Treasury): $TREASURY_WALLET_ADDRESS"
 PA_OUTPUT=$(forge create src/PasskeyAccount.sol:PasskeyAccount \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC" \
+  --broadcast \
   --constructor-args "$VERIFIER_ADDRESS" "$PM_ADDRESS" "$TREASURY_WALLET_ADDRESS" \
   2>&1)
 
@@ -104,6 +107,7 @@ echo "📄 Deploying DemoTarget..."
 DT_OUTPUT=$(forge create src/DemoTarget.sol:DemoTarget \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC" \
+  --broadcast \
   2>&1)
 
 echo "$DT_OUTPUT"

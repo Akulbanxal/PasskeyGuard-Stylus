@@ -34,17 +34,8 @@ contract PasskeyAccount is IPasskeyAccount {
     /// @notice Emitted when the verifier contract is updated.
     event VerifierUpdated(address indexed oldVerifier, address indexed newVerifier);
 
-    /// @notice Emitted after a successful P-256 signature verification.
-    event SignatureVerified(bytes32 indexed digest, address indexed account);
-
-    /// @notice Emitted when a transaction is blocked by the policy manager.
-    event PolicyBlocked(address indexed recipient, uint256 amount, string reason);
-
-    /// @notice Emitted when a transaction passes the policy check.
-    event PolicyApproved(address indexed recipient, uint256 amount);
-
     /// @notice Emitted after a transaction is successfully executed.
-    event TransactionExecuted(
+    event Executed(
         address indexed recipient,
         uint256 amount,
         bytes data,
@@ -186,7 +177,7 @@ contract PasskeyAccount is IPasskeyAccount {
         (bool success, ) = recipient.call{value: amount}(data);
         require(success, "PasskeyAccount: execution failed");
 
-        emit TransactionExecuted(recipient, amount, data, currentNonce, msg.sender);
+        emit TransactionExecuted(recipient, amount, data, currentNonce);
         return true;
     }
 

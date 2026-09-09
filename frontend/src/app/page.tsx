@@ -791,9 +791,9 @@ export default function App() {
                       style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.625rem', overflow: 'hidden' }}
                     >
                       {[
-                        { label: 'Biometric Signature',         active: status === 'authenticating',               done: ['sending','mining','success'].includes(status) },
-                        { label: 'Stylus P-256 Verification',   active: status === 'sending',                      done: ['mining','success'].includes(status) },
-                        { label: `Protocol Fee (${protocolFeeEth} ETH → Treasury)`, active: status === 'mining', done: status === 'success' },
+                        { label: 'Biometric Signature',         active: status === 'authenticating',               done: ['sending','mining','success'].includes(status as string) },
+                        { label: 'Stylus P-256 Verification',   active: status === 'sending',                      done: ['mining','success'].includes(status as string) },
+                        { label: `Protocol Fee (${protocolFeeEth} ETH → Treasury)`, active: status === 'mining', done: (status as string) === 'success' },
                       ].map((step, i) => (
                         <div key={i} style={{
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',

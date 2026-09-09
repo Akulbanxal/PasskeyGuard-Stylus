@@ -11,9 +11,9 @@ dataSources:
     name: PolicyManager
     network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x2aB2E67dE5eE8F43CB0167E8178fD56f8DeFb733"
       abi: PolicyManager
-      startBlock: 0
+      startBlock: 307058900
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -49,9 +49,9 @@ dataSources:
     name: PasskeyAccount
     network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x3800D4D57C8E18ee17f7bf982D4C5E70Ad0EF4b0"
       abi: PasskeyAccount
-      startBlock: 0
+      startBlock: 307058900
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -67,7 +67,7 @@ dataSources:
       eventHandlers:
         - event: PasskeyRegistered(indexed bytes32,indexed bytes32,indexed address)
           handler: handlePasskeyRegistered
-        - event: TransactionExecuted(indexed address,uint256,bytes,uint256,indexed address)
+        - event: TransactionExecuted(indexed address,uint256,bytes,uint256)
           handler: handleTransactionExecuted
         - event: FeeCollected(indexed address,indexed address,uint256,uint256)
           handler: handleFeeCollected
@@ -78,9 +78,9 @@ dataSources:
     name: SubscriptionManager
     network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x222aceDD00cedF1F301cE154dA39f8efCea01d3F"
       abi: SubscriptionManager
-      startBlock: 0
+      startBlock: 307058900
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
