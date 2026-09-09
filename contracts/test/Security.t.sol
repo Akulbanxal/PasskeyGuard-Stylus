@@ -20,7 +20,7 @@ contract SecurityTest is Test {
     function setUp() public {
         verifier = new MockVerifier(true);
         policyManager = new PolicyManager(address(this), 1 ether, 5 ether);
-        account = new PasskeyAccount(address(verifier), address(policyManager));
+        account = new PasskeyAccount(address(verifier), address(policyManager), address(0x9999999999999999999999999999999999999999));
         target = new DemoTarget();
 
         account.registerPasskey(X, Y);

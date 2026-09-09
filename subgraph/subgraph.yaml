@@ -11,10 +11,8 @@ dataSources:
     name: PolicyManager
     network: arbitrum-sepolia
     source:
-      # Replace with deployed PolicyManager address after deployment
       address: "0x0000000000000000000000000000000000000000"
       abi: PolicyManager
-      # Replace with the block number of the deployment transaction
       startBlock: 0
     mapping:
       kind: ethereum/events
@@ -51,7 +49,6 @@ dataSources:
     name: PasskeyAccount
     network: arbitrum-sepolia
     source:
-      # Replace with deployed PasskeyAccount address after deployment
       address: "0x0000000000000000000000000000000000000000"
       abi: PasskeyAccount
       startBlock: 0
@@ -62,6 +59,7 @@ dataSources:
       entities:
         - PasskeyAccount
         - Transaction
+        - FeeRecord
         - DailyStats
       abis:
         - name: PasskeyAccount
@@ -71,4 +69,28 @@ dataSources:
           handler: handlePasskeyRegistered
         - event: TransactionExecuted(indexed address,uint256,bytes,uint256,indexed address)
           handler: handleTransactionExecuted
+        - event: FeeCollected(indexed address,indexed address,uint256,uint256)
+          handler: handleFeeCollected
+      file: ./src/mappings.ts
+
+  # ─── SubscriptionManager ──────────────────────────────────────────────────
+  - kind: ethereum
+    name: SubscriptionManager
+    network: arbitrum-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: SubscriptionManager
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Subscription
+      abis:
+        - name: SubscriptionManager
+          file: ./abis/SubscriptionManager.json
+      eventHandlers:
+        - event: SubscriptionRenewed(indexed address,uint256,uint256)
+          handler: handleSubscriptionRenewed
       file: ./src/mappings.ts

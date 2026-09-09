@@ -6,12 +6,19 @@ import { registerPasskey } from '../../lib/webauthn/register';
 import { authenticatePasskey } from '../../lib/webauthn/authenticate';
 import { encodePacked, keccak256, parseEther, formatEther } from 'viem';
 import { useTransactionStatus } from '../../hooks/useTransactionStatus';
-import { usePasskeyAccountState } from '../../hooks/usePasskeyAccount';
+import { usePasskeyAccountState, useExecuteTransaction } from '../../hooks/usePasskeyAccount';
 import AnimatedBackground from '../components/AnimatedBackground';
 import FeaturesCarousel from '../components/FeaturesCarousel';
 import Footer from '../components/Footer';
+import { SubscriptionCard } from '../components/SubscriptionCard';
+import ThemeToggle from '../components/ThemeToggle';
+import Spinner, { SpinnerInline } from '../components/Spinner';
+import InfiniteMarquee from '../components/InfiniteMarquee';
+import ChatbotFab from '../components/ChatbotFab';
+import FlippingWord from '../components/FlippingWord';
+import { CONTRACT_ADDRESSES } from '../../lib/chain/config';
 
-const POLICY_LIMIT_ETH = 1000;
+const DEFAULT_SINGLE_TX_LIMIT_ETH = 1000;
 
 const pageTransition = {
   initial: { opacity: 0, y: 28 },
@@ -20,22 +27,30 @@ const pageTransition = {
   transition: { duration: 0.4, ease: 'easeOut' as const },
 };
 
-/* ─── Shared card style ─────────────────────────────────────────────────── */
+/* ─── Shared card style ──────────────────────────────────────────── */
 const glass: React.CSSProperties = {
-  background: 'rgba(12,13,20,0.75)',
-  border: '1px solid rgba(255,255,255,0.08)',
+  background: 'var(--card-bg)',
+  border: '1px solid var(--card-border)',
   borderRadius: 20,
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
+  backdropFilter: 'blur(24px)',
+  WebkitBackdropFilter: 'blur(24px)',
 };
 
 export default function App() {
   const [view, setView] = useState<'landing' | 'register' | 'dashboard' | 'composer' | 'result'>('landing');
   const [credId, setCredId] = useState('');
-  const [amountEth, setAmountEth] = useState('100');
+  const [amountEth, setAmountEth] = useState('0.1');
   const { status, setStatus, txHash, setTxHash } = useTransactionStatus();
   const [policyPassed, setPolicyPassed] = useState<boolean | null>(null);
-  const { isConnected, walletAddress, balance, singleTxLimit, isRegistered } = usePasskeyAccountState();
+  const [feeToast, setFeeToast] = useState<string | null>(null);
+
+  const { isConnected, walletAddress, balance, singleTxLimitEth, isRegistered, txFeeWei } = usePasskeyAccountState();
+  const { execute } = useExecuteTransaction();
+
+  const currentLimit = singleTxLimitEth ? parseFloat(singleTxLimitEth) : DEFAULT_SINGLE_TX_LIMIT_ETH;
+  const protocolFeeEth = txFeeWei ? formatEther(txFeeWei) : '0.0001';
+  const targetAmountNum = parseFloat(amountEth) || 0;
+  const totalEthRequired = (targetAmountNum + parseFloat(protocolFeeEth)).toFixed(4);
 
   const handleRegister = useCallback(async () => {
     setView('register');
@@ -53,20 +68,36 @@ export default function App() {
     setStatus('authenticating');
     try {
       const nonce = BigInt(0);
-      const recipient = '0x0000000000000000000000000000000000000001' as `0x${string}`;
+      const recipient = (CONTRACT_ADDRESSES.demoTarget || '0x0000000000000000000000000000000000000001') as `0x${string}`;
       const amount = parseEther(amountEth || '0');
       const challengeHex = keccak256(encodePacked(['address', 'uint256', 'uint256'], [recipient, amount, nonce]));
-      await authenticatePasskey(credId, new Uint8Array(Buffer.from(challengeHex.slice(2), 'hex')));
+      
+      const authResult = await authenticatePasskey(credId, new Uint8Array(Buffer.from(challengeHex.slice(2), 'hex')));
 
       setStatus('sending');
       await new Promise(r => setTimeout(r, 900));
 
-      const amt = parseFloat(amountEth) || 0;
-      if (amt > POLICY_LIMIT_ETH) {
-        setPolicyPassed(false); setStatus('error'); setView('result'); return;
+      if (targetAmountNum > currentLimit) {
+        setPolicyPassed(false); 
+        setStatus('error'); 
+        setView('result'); 
+        return;
       }
+      
       setPolicyPassed(true);
       setStatus('mining');
+
+      // Trigger fee notification toast
+      setFeeToast(`This transaction includes a ${protocolFeeEth} test-ETH protocol fee sent to the treasury wallet (${CONTRACT_ADDRESSES.treasuryWallet.slice(0, 6)}...${CONTRACT_ADDRESSES.treasuryWallet.slice(-4)}).`);
+
+      // Execute on-chain transaction
+      execute(recipient, amountEth, {
+        authenticatorData: `0x${Buffer.from(authResult.authenticatorData).toString('hex')}`,
+        clientDataJSON: `0x${Buffer.from(authResult.clientDataJSON).toString('hex')}`,
+        r: `0x${authResult.r}`,
+        s: `0x${authResult.s}`,
+      });
+
       await new Promise(r => setTimeout(r, 900));
       setStatus('success');
       setTxHash('0xsimulatedtxhash...');
@@ -74,7 +105,7 @@ export default function App() {
     } catch {
       setStatus('idle');
     }
-  }, [credId, amountEth, setStatus, setTxHash]);
+  }, [credId, amountEth, targetAmountNum, currentLimit, protocolFeeEth, execute, setStatus, setTxHash]);
 
   return (
     <>
@@ -93,43 +124,69 @@ export default function App() {
                 transition={{ duration: 0.5 }}
                 style={{
                   position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '1rem 2rem',
-                  backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                  background: 'rgba(6,6,8,0.7)',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center',
+                  padding: '0.875rem 2rem',
+                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  background: 'var(--nav-bg)',
+                  borderBottom: '1px solid var(--border)',
+                  transition: 'background 0.35s ease, border-color 0.35s ease',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                {/* Brand — left */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
                   <div style={{
-                    width: 34, height: 34, borderRadius: 9,
+                    width: 32, height: 32, borderRadius: 8,
                     background: 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 800, color: '#060608', fontSize: '0.875rem',
-                  }}>P</div>
-                  <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.025em' }}>PasskeyGuard</span>
+                    fontWeight: 900, color: '#060608', fontSize: '0.8rem',
+                    letterSpacing: '-0.02em',
+                  }}>PG</div>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '-0.03em', color: 'var(--text-1)', lineHeight: 1 }}>PasskeyGuard</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.56rem', color: 'var(--text-3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 1 }}>STYLUS // WEB3 IDENTITY</div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                  {['Features', 'GitHub', 'Docs'].map(l => (
-                    <a key={l} href={l === 'GitHub' ? 'https://github.com/Akulbanxal/PasskeyGuard-Stylus' : `#${l.toLowerCase()}`}
-                       target={l === 'GitHub' ? '_blank' : undefined} rel="noreferrer"
-                       style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.15s' }}
-                       onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                       onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
-                    >{l}</a>
+
+                {/* Nav links — ABSOLUTELY CENTERED */}
+                <div className="hide-mobile" style={{
+                  position: 'absolute', left: '50%', top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  display: 'flex', alignItems: 'center', gap: '0.25rem',
+                }}>
+                  {[
+                    { label: 'Features', href: '#features' },
+                    { label: 'GitHub', href: 'https://github.com/Akulbanxal/PasskeyGuard-Stylus', external: true },
+                    { label: 'Docs', href: '#' },
+                    { label: 'Pricing', href: '#pricing' },
+                  ].map(l => (
+                    <a key={l.label}
+                       href={l.href}
+                       target={(l as {external?: boolean}).external ? '_blank' : undefined}
+                       rel={(l as {external?: boolean}).external ? 'noreferrer' : undefined}
+                       style={{
+                         color: 'var(--text-2)', fontSize: '0.75rem', textDecoration: 'none',
+                         padding: '0.4rem 0.9rem', borderRadius: 8,
+                         fontFamily: 'var(--font-mono)', fontWeight: 600,
+                         letterSpacing: '0.06em', textTransform: 'uppercase',
+                         transition: 'color 0.15s, background 0.15s',
+                       }}
+                       onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-1)'; e.currentTarget.style.background = 'var(--bg-2)'; }}
+                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-2)'; e.currentTarget.style.background = 'transparent'; }}
+                    >{l.label}</a>
                   ))}
                 </div>
-                <ConnectButton
-                  accountStatus="avatar"
-                  chainStatus="icon"
-                  showBalance={false}
-                />
+
+                {/* Right: Toggle + Connect — pushed to far right */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: 'auto', flexShrink: 0 }}>
+                  <ThemeToggle />
+                  <ConnectButton accountStatus="avatar" chainStatus="icon" showBalance={false} />
+                </div>
               </motion.nav>
 
               {/* ── Hero Section ── */}
               <section style={{
                 minHeight: '100vh', display: 'flex', alignItems: 'center',
-                paddingTop: '5rem',
+                paddingTop: '5rem', position: 'relative',
               }}>
                 <div style={{
                   maxWidth: 1200, margin: '0 auto', padding: '0 2rem',
@@ -138,22 +195,31 @@ export default function App() {
                 }}>
                   {/* Left: Text */}
                   <div>
-                    {/* Badge */}
+                    {/* Live network badge row */}
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: 0.1 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}
                     >
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                        fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em',
-                        textTransform: 'uppercase', color: '#00D4BE',
-                        background: 'rgba(0,212,190,0.08)',
-                        border: '1px solid rgba(0,212,190,0.22)',
-                        borderRadius: 100, padding: '0.35rem 1rem',
-                        marginBottom: '2rem', cursor: 'default',
+                        fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em',
+                        textTransform: 'uppercase', color: 'var(--teal)',
+                        background: 'var(--teal-dim)',
+                        border: '1px solid rgba(0,212,190,0.28)',
+                        borderRadius: 100, padding: '0.32rem 0.9rem',
+                        cursor: 'default', fontFamily: 'var(--font-mono)',
                       }}>
-                        ✦ Powered by Arbitrum Stylus
+                        ✦ Arbitrum Stylus
+                      </span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                        <motion.div
+                          animate={{ opacity: [1, 0.3, 1] }}
+                          transition={{ duration: 1.8, repeat: Infinity }}
+                          style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', flexShrink: 0 }}
+                        />
+                        LIVE // SEPOLIA
                       </span>
                     </motion.div>
 
@@ -163,18 +229,17 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.65, delay: 0.2 }}
                       style={{
-                        fontSize: 'clamp(2.5rem, 5.5vw, 4.25rem)',
-                        fontWeight: 800, letterSpacing: '-0.04em',
-                        lineHeight: 1.08, marginBottom: '1.5rem',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: 'clamp(3rem, 6.5vw, 5.5rem)',
+                        fontWeight: 900, letterSpacing: '-0.055em',
+                        lineHeight: 0.92, marginBottom: '1.75rem',
                       }}
+                      className="gradient-text-hero"
                     >
-                      <span style={{
-                        background: 'linear-gradient(135deg, #fff 0%, #fff 45%, #00D4BE 75%, #4F8EF7 100%)',
-                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                      }}>
-                        Passkey-Secured<br />Web3 Identity.
-                      </span>
+                      Passkey-<br />
+                      <FlippingWord words={['Secured', 'Verified', 'Sovereign', 'Immutable']} /><br />
+                      Web3<br />
+                      Identity.
                     </motion.h1>
 
                     {/* Subtext */}
@@ -183,8 +248,8 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.35 }}
                       style={{
-                        color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem',
-                        lineHeight: 1.75, marginBottom: '2.5rem', maxWidth: 440,
+                        color: 'var(--text-2)', fontSize: '1.05rem',
+                        lineHeight: 1.75, marginBottom: '2.5rem', maxWidth: 420,
                       }}
                     >
                       Your biometric signs. The chain decides. No seed phrases, no custody —
@@ -205,10 +270,12 @@ export default function App() {
                         style={{
                           background: 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
                           color: '#060608', border: 'none', borderRadius: 12,
-                          padding: '0.875rem 1.75rem', fontWeight: 800,
+                          padding: '0.9rem 1.85rem', fontWeight: 800,
                           fontSize: '1rem', cursor: 'pointer',
                           boxShadow: '0 8px 28px rgba(0,212,190,0.28)',
                           display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          fontFamily: 'var(--font-display)',
+                          letterSpacing: '-0.02em',
                         }}
                       >
                         ✦ Create Account
@@ -216,14 +283,15 @@ export default function App() {
                       <motion.a
                         href="https://github.com/Akulbanxal/PasskeyGuard-Stylus"
                         target="_blank" rel="noreferrer"
-                        whileHover={{ scale: 1.03, background: 'rgba(255,255,255,0.07)' }}
+                        whileHover={{ scale: 1.03, borderColor: 'var(--border-hover)' }}
                         whileTap={{ scale: 0.97 }}
                         style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: 12, padding: '0.875rem 1.75rem',
+                          background: 'var(--bg-2)',
+                          color: 'var(--text-1)', border: '1px solid var(--border)',
+                          borderRadius: 12, padding: '0.9rem 1.85rem',
                           fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
                           textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          transition: 'all 0.2s',
                         }}
                       >
                         View on GitHub →
@@ -237,7 +305,7 @@ export default function App() {
                       transition={{ duration: 0.6, delay: 0.6 }}
                       style={{
                         display: 'flex', gap: '2rem', flexWrap: 'wrap',
-                        paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.07)',
+                        paddingTop: '2rem', borderTop: '1px solid var(--border)',
                       }}
                     >
                       {[
@@ -246,8 +314,8 @@ export default function App() {
                         { label: 'Auth', value: 'WebAuthn L2' },
                       ].map(stat => (
                         <div key={stat.label}>
-                          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.2rem' }}>{stat.label}</div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#00D4BE', fontFamily: 'monospace' }}>{stat.value}</div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)' }}>{stat.label}</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--teal)', fontFamily: 'var(--font-mono)' }}>{stat.value}</div>
                         </div>
                       ))}
                     </motion.div>
@@ -261,45 +329,54 @@ export default function App() {
                     style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                   >
                     <div style={{
-                      ...glass,
-                      padding: '2rem', width: '100%', maxWidth: 400,
-                      display: 'flex', flexDirection: 'column', gap: '1rem',
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: 20, backdropFilter: 'blur(24px)',
+                      WebkitBackdropFilter: 'blur(24px)',
+                      padding: '1.75rem', width: '100%', maxWidth: 400,
+                      display: 'flex', flexDirection: 'column', gap: '0.875rem',
                     }}>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>
-                        Transaction Flow
+                      {/* Card header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
+                          Transaction Flow
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--teal)', background: 'var(--teal-dim)', border: '1px solid rgba(0,212,190,0.22)', borderRadius: 100, padding: '0.2rem 0.6rem' }}>
+                          LIVE
+                        </span>
                       </div>
                       {[
-                        { icon: '👆', step: 'Biometric Auth', detail: 'Face ID / Touch ID', color: '#00D4BE', delay: 0 },
-                        { icon: '🔏', step: 'P-256 Sign', detail: 'Secure Enclave', color: '#4F8EF7', delay: 0.4 },
-                        { icon: '⚡', step: 'Stylus Verify', detail: 'On-chain WASM', color: '#8B5CF6', delay: 0.8 },
-                        { icon: '✅', step: 'Policy Check', detail: 'PolicyManager.sol', color: '#10B981', delay: 1.2 },
-                        { icon: '🚀', step: 'Execute', detail: 'Arbitrum L2', color: '#F59E0B', delay: 1.6 },
+                        { icon: '👆', step: 'Biometric Auth',  detail: 'Face ID / Touch ID',          color: '#00D4BE', delay: 0   },
+                        { icon: '🔏', step: 'P-256 Sign',      detail: 'Secure Enclave',               color: '#4F8EF7', delay: 0.4 },
+                        { icon: '⚡', step: 'Stylus Verify',   detail: 'On-chain WASM',               color: '#8B5CF6', delay: 0.8 },
+                        { icon: '💎', step: 'Fee Skim',        detail: `${protocolFeeEth} ETH → Treasury`, color: '#EC4899', delay: 1.0 },
+                        { icon: '🛡️', step: 'Policy Check',   detail: 'PolicyManager.sol',            color: '#10B981', delay: 1.2 },
+                        { icon: '🚀', step: 'Execute',         detail: 'Arbitrum L2',                  color: '#F59E0B', delay: 1.6 },
                       ].map((item, i) => (
                         <motion.div
                           key={i}
                           initial={{ opacity: 0, x: -16 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.5, delay: 0.5 + item.delay * 0.4 }}
+                          transition={{ duration: 0.5, delay: 0.4 + item.delay * 0.35 }}
+                          whileHover={{ x: 4, transition: { duration: 0.15 } }}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: '1rem',
-                            padding: '0.75rem 1rem',
-                            background: `${item.color}08`,
-                            border: `1px solid ${item.color}20`,
-                            borderRadius: 12,
+                            display: 'flex', alignItems: 'center', gap: '0.875rem',
+                            padding: '0.65rem 0.875rem',
+                            background: `${item.color}0A`,
+                            border: `1px solid ${item.color}22`,
+                            borderRadius: 10, cursor: 'default',
+                            transition: 'border-color 0.2s',
                           }}
                         >
-                          <span style={{ fontSize: '1.25rem' }}>{item.icon}</span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{item.step}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>{item.detail}</div>
+                          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{item.icon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-1)' }}>{item.step}</div>
+                            <div style={{ fontSize: '0.67rem', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.detail}</div>
                           </div>
                           <motion.div
-                            style={{
-                              width: 8, height: 8, borderRadius: '50%',
-                              background: item.color,
-                            }}
-                            animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8] }}
-                            transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                            style={{ width: 7, height: 7, borderRadius: '50%', background: item.color, flexShrink: 0 }}
+                            animate={{ opacity: [0.4, 1, 0.4], scale: [0.85, 1.15, 0.85] }}
+                            transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.28 }}
                           />
                         </motion.div>
                       ))}
@@ -308,8 +385,18 @@ export default function App() {
                 </div>
               </section>
 
+              {/* ── Infinite Marquee ── */}
+              <InfiniteMarquee />
+
               {/* ── Features Carousel ── */}
               <FeaturesCarousel />
+
+              {/* ── Subscription Section on Landing ── */}
+              <section id="pricing" style={{ position: 'relative', zIndex: 1, padding: '5rem 2rem 6rem' }}>
+                <div style={{ maxWidth: 900, margin: '0 auto' }}>
+                  <SubscriptionCard />
+                </div>
+              </section>
 
               {/* ── Footer ── */}
               <Footer />
@@ -324,46 +411,58 @@ export default function App() {
                 alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <div style={{ ...glass, padding: '3rem', maxWidth: 400, width: '100%', textAlign: 'center' }}>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                  style={{
-                    width: 80, height: 80, borderRadius: '50%',
-                    background: 'conic-gradient(from 0deg, #00D4BE, #4F8EF7, #8B5CF6, #00D4BE)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 1.5rem',
-                    padding: 3,
-                  }}
-                >
-                  <div style={{
-                    width: '100%', height: '100%', borderRadius: '50%',
-                    background: '#0A0B10',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '2rem',
-                  }}>
-                    {credId ? '✅' : '🔐'}
-                  </div>
-                </motion.div>
+              <div style={{ ...glass, padding: '3rem', maxWidth: 420, width: '100%', textAlign: 'center' }}>
 
-                <h2 style={{ fontWeight: 700, fontSize: '1.5rem', marginBottom: '0.75rem', letterSpacing: '-0.025em' }}>
+                {/* Spinner — pink/blue gradient matching background */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+                  {credId ? (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      style={{
+                        width: 80, height: 80, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #10B981, #00D4BE)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '2.25rem',
+                      }}
+                    >
+                      ✅
+                    </motion.div>
+                  ) : (
+                    /* Large 80px spinner using same pink-to-blue palette */
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      style={{
+                        width: 80, height: 80, borderRadius: '50%',
+                        background: 'linear-gradient(to bottom left, #ec4899, #3b82f6)',
+                        padding: 4,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <div style={{
+                        width: '100%', height: '100%', borderRadius: '50%',
+                        background: 'var(--bg-1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '2rem',
+                      }}>🔐</div>
+                    </motion.div>
+                  )}
+                </div>
+
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.5rem', marginBottom: '0.75rem', letterSpacing: '-0.03em', color: 'var(--text-1)' }}>
                   {credId ? 'Registration Complete' : 'Device Registration'}
                 </h2>
-                <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '2rem', lineHeight: 1.6 }}>
+                <p style={{ color: 'var(--text-2)', marginBottom: '2rem', lineHeight: 1.7 }}>
                   {credId
                     ? 'Your passkey has been registered securely. Redirecting to your dashboard...'
                     : 'Follow your browser prompt to register with Face ID or Touch ID.'}
                 </p>
 
+                {/* Loading indicator — use Spinner */}
                 {!credId && (
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                    {[0, 1, 2].map(d => (
-                      <motion.div key={d}
-                        style={{ width: 8, height: 8, borderRadius: '50%', background: '#00D4BE' }}
-                        animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
-                        transition={{ duration: 1.2, repeat: Infinity, delay: d * 0.2 }}
-                      />
-                    ))}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Spinner label="Awaiting biometric…" />
                   </div>
                 )}
               </div>
@@ -389,122 +488,134 @@ export default function App() {
                   }}>P</div>
                   <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.025em' }}>PasskeyGuard</span>
                 </div>
-                <span style={{
-                  fontSize: '0.7rem', fontWeight: 600, color: '#00D4BE',
-                  background: 'rgba(0,212,190,0.08)', border: '1px solid rgba(0,212,190,0.2)',
-                  borderRadius: 100, padding: '0.3rem 0.9rem',
-                }}>● Passkey Active</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <span style={{
+                    fontSize: '0.7rem', fontWeight: 600, color: '#00D4BE',
+                    background: 'rgba(0,212,190,0.08)', border: '1px solid rgba(0,212,190,0.2)',
+                    borderRadius: 100, padding: '0.3rem 0.9rem',
+                  }}>● Passkey Active</span>
+                  <ConnectButton accountStatus="avatar" chainStatus="icon" showBalance={false} />
+                </div>
               </div>
 
               <div style={{
                 maxWidth: 1200, margin: '0 auto',
-                display: 'grid', gridTemplateColumns: '220px 1fr 280px', gap: '1.5rem',
+                display: 'flex', flexDirection: 'column', gap: '1.5rem',
               }}>
-                {/* Sidebar */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  style={{ ...glass, padding: '1.25rem', height: 'fit-content' }}
-                >
-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: '1rem' }}>Menu</div>
-                  {[
-                    { label: 'Dashboard', icon: '◉', active: true, action: undefined },
-                    { label: 'Send Funds', icon: '↗', active: false, action: () => setView('composer') },
-                  ].map(item => (
-                    <button key={item.label} onClick={item.action} style={{
-                      width: '100%', padding: '0.75rem 1rem',
-                      display: 'flex', alignItems: 'center', gap: '0.625rem',
-                      background: item.active ? 'rgba(0,212,190,0.08)' : 'transparent',
-                      border: item.active ? '1px solid rgba(0,212,190,0.18)' : '1px solid transparent',
-                      borderRadius: 10, color: item.active ? '#00D4BE' : 'rgba(255,255,255,0.55)',
-                      fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-                      marginBottom: '0.375rem', textAlign: 'left',
-                    }}>
-                      <span>{item.icon}</span>{item.label}
-                    </button>
-                  ))}
-                </motion.div>
+                {/* Subscription Card Component */}
+                <SubscriptionCard />
 
-                {/* Main content */}
-                <div>
-                  {/* Balance card */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '220px 1fr 280px', gap: '1.5rem',
+                }}>
+                  {/* Sidebar */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                    style={{
-                      ...glass,
-                      background: 'linear-gradient(135deg, rgba(0,212,190,0.06), rgba(79,142,247,0.04), rgba(12,13,20,0.9))',
-                      padding: '2rem', marginBottom: '1.5rem',
-                    }}
+                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    style={{ ...glass, padding: '1.25rem', height: 'fit-content' }}
                   >
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>
-                      0x000...0001
-                    </div>
-                    <div style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: '1.5rem' }}>
-                      $1,<span style={{ color: 'rgba(255,255,255,0.85)' }}>200</span>
-                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.5em' }}>.00</span>
-                    </div>
-                    <motion.button
-                      whileHover={{ scale: 1.02, boxShadow: '0 8px 28px rgba(0,212,190,0.35)' }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setView('composer')}
-                      style={{
-                        background: 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
-                        color: '#060608', border: 'none', borderRadius: 10,
-                        padding: '0.75rem 2rem', fontWeight: 700,
-                        fontSize: '0.9rem', cursor: 'pointer',
-                        boxShadow: '0 4px 16px rgba(0,212,190,0.2)',
-                      }}
-                    >↗ Send</motion.button>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: '1rem' }}>Menu</div>
+                    {[
+                      { label: 'Dashboard', icon: '◉', active: true, action: undefined },
+                      { label: 'Send Funds', icon: '↗', active: false, action: () => setView('composer') },
+                    ].map(item => (
+                      <button key={item.label} onClick={item.action} style={{
+                        width: '100%', padding: '0.75rem 1rem',
+                        display: 'flex', alignItems: 'center', gap: '0.625rem',
+                        background: item.active ? 'rgba(0,212,190,0.08)' : 'transparent',
+                        border: item.active ? '1px solid rgba(0,212,190,0.18)' : '1px solid transparent',
+                        borderRadius: 10, color: item.active ? '#00D4BE' : 'rgba(255,255,255,0.55)',
+                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                        marginBottom: '0.375rem', textAlign: 'left',
+                      }}>
+                        <span>{item.icon}</span>{item.label}
+                      </button>
+                    ))}
                   </motion.div>
 
-                  {/* Activity */}
+                  {/* Main content */}
+                  <div>
+                    {/* Balance card */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      style={{
+                        ...glass,
+                        background: 'linear-gradient(135deg, rgba(0,212,190,0.06), rgba(79,142,247,0.04), rgba(12,13,20,0.9))',
+                        padding: '2rem', marginBottom: '1.5rem',
+                      }}
+                    >
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>
+                        {CONTRACT_ADDRESSES.passkeyAccount !== '0x0000000000000000000000000000000000000000'
+                          ? `${CONTRACT_ADDRESSES.passkeyAccount.slice(0, 6)}...${CONTRACT_ADDRESSES.passkeyAccount.slice(-4)}`
+                          : '0x000...0001'}
+                      </div>
+                      <div style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: '1.5rem' }}>
+                        {balance ? balance.formatted.slice(0, 6) : '0.000'}
+                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.5em', marginLeft: '0.3em' }}>ETH</span>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.02, boxShadow: '0 8px 28px rgba(0,212,190,0.35)' }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setView('composer')}
+                        style={{
+                          background: 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
+                          color: '#060608', border: 'none', borderRadius: 10,
+                          padding: '0.75rem 2rem', fontWeight: 700,
+                          fontSize: '0.9rem', cursor: 'pointer',
+                          boxShadow: '0 4px 16px rgba(0,212,190,0.2)',
+                        }}
+                      >↗ Send</motion.button>
+                    </motion.div>
+
+                    {/* Activity */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      style={{ ...glass, padding: '1.5rem' }}
+                    >
+                      <h3 style={{ fontWeight: 700, marginBottom: '1.25rem', fontSize: '0.9rem', letterSpacing: '-0.01em' }}>Activity</h3>
+                      <div style={{ textAlign: 'center', padding: '3rem 0', color: 'rgba(255,255,255,0.25)' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📭</div>
+                        <div style={{ fontSize: '0.875rem' }}>No transactions yet.</div>
+                        <div style={{ fontSize: '0.8rem', marginTop: '0.4rem', color: 'rgba(255,255,255,0.18)' }}>
+                          Send your first transaction to get started.
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Security sidebar */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 }}
-                    style={{ ...glass, padding: '1.5rem' }}
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    style={{ ...glass, padding: '1.5rem', height: 'fit-content' }}
                   >
-                    <h3 style={{ fontWeight: 700, marginBottom: '1.25rem', fontSize: '0.9rem', letterSpacing: '-0.01em' }}>Activity</h3>
-                    <div style={{ textAlign: 'center', padding: '3rem 0', color: 'rgba(255,255,255,0.25)' }}>
-                      <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📭</div>
-                      <div style={{ fontSize: '0.875rem' }}>No transactions yet.</div>
-                      <div style={{ fontSize: '0.8rem', marginTop: '0.4rem', color: 'rgba(255,255,255,0.18)' }}>
-                        Send your first transaction to get started.
+                    <h3 style={{ fontWeight: 700, marginBottom: '1.5rem', fontSize: '0.9rem' }}>Security Policy</h3>
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '0.875rem', background: 'rgba(0,212,190,0.06)',
+                      border: '1px solid rgba(0,212,190,0.15)', borderRadius: 10, marginBottom: '1rem',
+                    }}>
+                      <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)' }}>Single Tx Limit</div>
+                      <div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#00D4BE', fontSize: '0.9rem' }}>
+                        {currentLimit} ETH
                       </div>
                     </div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      fontSize: '0.75rem', color: '#10B981', marginBottom: '1.5rem',
+                    }}>
+                      <span>●</span> Policy Active
+                    </div>
+                    <button style={{
+                      width: '100%', padding: '0.65rem',
+                      background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 10, color: 'rgba(255,255,255,0.55)',
+                      fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
+                    }}>Manage Policy</button>
                   </motion.div>
                 </div>
-
-                {/* Security sidebar */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  style={{ ...glass, padding: '1.5rem', height: 'fit-content' }}
-                >
-                  <h3 style={{ fontWeight: 700, marginBottom: '1.5rem', fontSize: '0.9rem' }}>Security Policy</h3>
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '0.875rem', background: 'rgba(0,212,190,0.06)',
-                    border: '1px solid rgba(0,212,190,0.15)', borderRadius: 10, marginBottom: '1rem',
-                  }}>
-                    <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)' }}>Tx Limit</div>
-                    <div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#00D4BE', fontSize: '0.9rem' }}>
-                      ${POLICY_LIMIT_ETH}
-                    </div>
-                  </div>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    fontSize: '0.75rem', color: '#10B981', marginBottom: '1.5rem',
-                  }}>
-                    <span>●</span> Policy Active
-                  </div>
-                  <button style={{
-                    width: '100%', padding: '0.65rem',
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 10, color: 'rgba(255,255,255,0.55)',
-                    fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
-                  }}>Manage Policy</button>
-                </motion.div>
               </div>
             </motion.div>
           )}
@@ -514,7 +625,7 @@ export default function App() {
             <motion.div key="composer" {...pageTransition}
               style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}
             >
-              <div style={{ ...glass, padding: '2.5rem', maxWidth: 480, width: '100%' }}>
+              <div style={{ ...glass, padding: '2.5rem', maxWidth: 520, width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                   <button
                     onClick={() => setView('dashboard')}
@@ -524,10 +635,10 @@ export default function App() {
                 </div>
 
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Recipient</label>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Recipient Address</label>
                   <input
                     type="text" disabled
-                    defaultValue="0x0000000000000000000000000000000000000001"
+                    defaultValue={CONTRACT_ADDRESSES.demoTarget !== '0x0000000000000000000000000000000000000000' ? CONTRACT_ADDRESSES.demoTarget : '0x0000000000000000000000000000000000000001'}
                     style={{
                       width: '100%', background: 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
@@ -538,9 +649,9 @@ export default function App() {
                 </div>
 
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Amount (USD)</label>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Transfer Amount (ETH)</label>
                   <input
-                    type="number" value={amountEth}
+                    type="number" step="0.01" value={amountEth}
                     onChange={e => setAmountEth(e.target.value)}
                     style={{
                       width: '100%', background: 'rgba(255,255,255,0.06)',
@@ -553,43 +664,96 @@ export default function App() {
                   />
                 </div>
 
+                {/* Tenderly-style Fee & Cost Breakdown */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 12,
+                  padding: '1rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  fontSize: '0.8125rem'
+                }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', marginBottom: '0.2rem' }}>
+                    Cost & Fee Breakdown
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)' }}>
+                    <span>Target Transfer:</span>
+                    <span style={{ fontFamily: 'monospace', color: '#fff' }}>{amountEth || '0'} ETH</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ color: '#EC4899' }}>💎 Protocol Fee (Treasury):</span>
+                    </span>
+                    <span style={{ fontFamily: 'monospace', color: '#EC4899', fontWeight: 600 }}>{protocolFeeEth} ETH</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)' }}>
+                    <span>Est. Network Gas:</span>
+                    <span style={{ fontFamily: 'monospace', color: '#10B981' }}>~0.00005 ETH</span>
+                  </div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.5rem', marginTop: '0.2rem', display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#fff' }}>
+                    <span>Total Required:</span>
+                    <span style={{ fontFamily: 'monospace', color: '#00D4BE' }}>~{totalEthRequired} ETH</span>
+                  </div>
+                </div>
+
                 {/* Policy strip */}
                 <motion.div
                   animate={{
-                    borderColor: (parseFloat(amountEth) || 0) > POLICY_LIMIT_ETH ? 'rgba(239,68,68,0.5)' : 'rgba(0,212,190,0.35)',
-                    background: (parseFloat(amountEth) || 0) > POLICY_LIMIT_ETH ? 'rgba(239,68,68,0.06)' : 'rgba(0,212,190,0.05)',
+                    borderColor: targetAmountNum > currentLimit ? 'rgba(239,68,68,0.5)' : 'rgba(0,212,190,0.35)',
+                    background: targetAmountNum > currentLimit ? 'rgba(239,68,68,0.06)' : 'rgba(0,212,190,0.05)',
                   }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '0.6rem',
                     padding: '0.875rem 1rem', borderRadius: 10,
                     border: '1px solid', marginBottom: '1.5rem', fontSize: '0.875rem',
-                    color: (parseFloat(amountEth) || 0) > POLICY_LIMIT_ETH ? '#F87171' : '#00D4BE',
+                    color: targetAmountNum > currentLimit ? '#F87171' : '#00D4BE',
                   }}
                 >
                   <span style={{ fontSize: '1rem' }}>
-                    {(parseFloat(amountEth) || 0) > POLICY_LIMIT_ETH ? '⚠️' : '✓'}
+                    {targetAmountNum > currentLimit ? '⚠️' : '✓'}
                   </span>
-                  {(parseFloat(amountEth) || 0) > POLICY_LIMIT_ETH
-                    ? 'Exceeds policy limit — will be blocked on-chain.'
+                  {targetAmountNum > currentLimit
+                    ? `Exceeds single tx limit (${currentLimit} ETH) — subscribe to Premium for 5× limits.`
                     : 'Within policy limits. Ready to sign.'}
                 </motion.div>
 
                 <motion.button
-                  whileHover={{ scale: 1.02, boxShadow: '0 12px 36px rgba(0,212,190,0.4)' }}
+                  whileHover={status === 'idle' ? { scale: 1.02, boxShadow: '0 12px 36px rgba(0,212,190,0.4)' } : {}}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleAuthenticate}
                   disabled={status !== 'idle'}
                   style={{
                     width: '100%', padding: '1rem',
-                    background: status !== 'idle' ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
-                    color: status !== 'idle' ? 'rgba(255,255,255,0.5)' : '#060608',
-                    border: 'none', borderRadius: 12, fontWeight: 800,
+                    background: status !== 'idle'
+                      ? 'linear-gradient(135deg, rgba(236,72,153,0.2), rgba(59,130,246,0.2))'
+                      : 'linear-gradient(135deg, #00D4BE, #4F8EF7)',
+                    color: status !== 'idle' ? 'rgba(255,255,255,0.75)' : '#060608',
+                    border: status !== 'idle' ? '1px solid rgba(236,72,153,0.3)' : 'none',
+                    borderRadius: 12, fontWeight: 800,
                     fontSize: '1rem', cursor: status !== 'idle' ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 4px 16px rgba(0,212,190,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                    boxShadow: status === 'idle' ? '0 4px 16px rgba(0,212,190,0.15)' : 'none',
+                    marginBottom: '0',
+                    transition: 'all 0.3s ease',
                   }}
                 >
-                  {status === 'idle' ? '🔐 Authenticate & Send' : '⏳ Processing...'}
+                  {status === 'idle' ? (
+                    <>🔐 Authenticate &amp; Send</>
+                  ) : (
+                    <>
+                      <SpinnerInline />
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
+                        {status === 'authenticating' ? 'Awaiting Biometric…'
+                          : status === 'sending' ? 'Signing P-256…'
+                          : 'Broadcasting…'}
+                      </span>
+                    </>
+                  )}
                 </motion.button>
+
 
                 {/* Trace */}
                 <AnimatePresence>
@@ -600,24 +764,37 @@ export default function App() {
                       style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.625rem', overflow: 'hidden' }}
                     >
                       {[
-                        { label: 'Biometric Signature', active: status === 'authenticating', done: status !== 'authenticating' },
-                        { label: 'Stylus P-256 Verification', active: status === 'sending' || status === 'mining', done: status === 'mining' },
+                        { label: 'Biometric Signature',         active: status === 'authenticating',               done: ['sending','mining','success'].includes(status) },
+                        { label: 'Stylus P-256 Verification',   active: status === 'sending',                      done: ['mining','success'].includes(status) },
+                        { label: `Protocol Fee (${protocolFeeEth} ETH → Treasury)`, active: status === 'mining', done: status === 'success' },
                       ].map((step, i) => (
                         <div key={i} style={{
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           padding: '0.75rem 1rem',
-                          background: step.active ? 'rgba(0,212,190,0.06)' : step.done ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${step.active ? 'rgba(0,212,190,0.2)' : step.done ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                          background: step.active
+                            ? 'linear-gradient(135deg, rgba(236,72,153,0.07), rgba(59,130,246,0.07))'
+                            : step.done ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${
+                            step.active ? 'rgba(236,72,153,0.25)'
+                            : step.done ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)'
+                          }`,
                           borderRadius: 10,
+                          transition: 'all 0.3s ease',
                         }}>
-                          <span style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)' }}>{step.label}</span>
-                          <motion.span
-                            style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 700, color: step.done ? '#10B981' : step.active ? '#00D4BE' : 'rgba(255,255,255,0.25)' }}
-                            animate={step.active ? { opacity: [1, 0.4, 1] } : {}}
-                            transition={{ duration: 1.2, repeat: Infinity }}
-                          >
-                            {step.done ? 'DONE ✓' : step.active ? 'ACTIVE' : 'PENDING'}
-                          </motion.span>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--text-2)' }}>{step.label}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            {step.active && <SpinnerInline />}
+                            <motion.span
+                              style={{
+                                fontFamily: 'var(--font-mono)', fontSize: '0.7rem', fontWeight: 700,
+                                color: step.done ? '#10B981' : step.active ? '#ec4899' : 'var(--text-3)',
+                              }}
+                              animate={step.active ? { opacity: [1, 0.4, 1] } : {}}
+                              transition={{ duration: 1.2, repeat: Infinity }}
+                            >
+                              {step.done ? 'DONE ✓' : step.active ? 'ACTIVE' : 'PENDING'}
+                            </motion.span>
+                          </div>
                         </div>
                       ))}
                     </motion.div>
@@ -654,6 +831,26 @@ export default function App() {
                   {policyPassed ? 'Your transaction was signed and submitted successfully.' : 'Your transaction exceeded the on-chain policy limit.'}
                 </p>
 
+                {/* Protocol Fee Toast */}
+                {feeToast && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      padding: '0.875rem 1rem',
+                      background: 'rgba(236,72,153,0.1)',
+                      border: '1px solid rgba(236,72,153,0.3)',
+                      borderRadius: 12,
+                      marginBottom: '1.5rem',
+                      fontSize: '0.8125rem',
+                      color: '#F472B6',
+                      lineHeight: 1.5
+                    }}
+                  >
+                    💎 <strong>Protocol Fee Notification:</strong> {feeToast}
+                  </motion.div>
+                )}
+
                 {/* Status cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem', marginBottom: '1.5rem' }}>
                   {[
@@ -682,7 +879,7 @@ export default function App() {
                       fontSize: '0.8125rem', color: '#F87171', lineHeight: 1.6,
                     }}
                   >
-                    <strong>Reverted:</strong> ${amountEth} exceeds your single-tx limit of ${POLICY_LIMIT_ETH}.
+                    <strong>Reverted:</strong> {amountEth} ETH exceeds your limit of {currentLimit} ETH. Upgrade to Premium Tier for 5x limits.
                   </motion.div>
                 )}
 
@@ -694,10 +891,13 @@ export default function App() {
                   display: 'flex', flexDirection: 'column', gap: '0.4rem',
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.4)' }}>
-                    <span>Amount</span><span style={{ color: '#fff' }}>${amountEth}</span>
+                    <span>Amount</span><span style={{ color: '#fff' }}>{amountEth} ETH</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.4)' }}>
-                    <span>Hash</span><span style={{ color: '#fff' }}>{txHash || 'N/A (Reverted)'}</span>
+                    <span>Protocol Fee</span><span style={{ color: '#EC4899' }}>{protocolFeeEth} ETH</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.4)' }}>
+                    <span>Tx Hash</span><span style={{ color: '#fff' }}>{txHash || 'N/A (Reverted)'}</span>
                   </div>
                 </div>
 
@@ -715,8 +915,10 @@ export default function App() {
               </div>
             </motion.div>
           )}
-
         </AnimatePresence>
+        
+        {/* ── Chatbot FAB ── */}
+        <ChatbotFab />
       </div>
     </>
   );

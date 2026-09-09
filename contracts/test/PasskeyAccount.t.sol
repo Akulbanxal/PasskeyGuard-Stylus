@@ -38,7 +38,7 @@ contract PasskeyAccountTest is Test {
         verifier = new MockVerifier(true);
         // Single Tx Limit: 1 ether, Daily Limit: 5 ether
         policyManager = new PolicyManager(address(this), 1 ether, 5 ether);
-        account = new PasskeyAccount(address(verifier), address(policyManager));
+        account = new PasskeyAccount(address(verifier), address(policyManager), address(0x9999999999999999999999999999999999999999));
         target = new DemoTarget();
 
         // Register passkey

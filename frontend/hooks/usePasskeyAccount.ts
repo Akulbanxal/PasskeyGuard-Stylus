@@ -11,11 +11,10 @@ import {
   useWaitForTransactionReceipt,
   useBalance,
   useAccount,
-  usePublicClient,
 } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { passkeyAccountAbi, policyManagerAbi } from '../lib/chain/abi';
-import { CONTRACT_ADDRESSES } from '../lib/chain/config';
+import { CONTRACT_ADDRESSES, MONETIZATION_CONFIG } from '../lib/chain/config';
 
 // ─── Read hooks ───────────────────────────────────────────────────────────
 
@@ -25,6 +24,27 @@ export function useAccountNonce() {
     address: CONTRACT_ADDRESSES.passkeyAccount,
     abi: passkeyAccountAbi,
     functionName: 'nonce',
+    query: { enabled: CONTRACT_ADDRESSES.passkeyAccount !== '0x0000000000000000000000000000000000000000' },
+  });
+}
+
+/** Read per-transaction protocol fee in wei */
+export function useTxFeeWei() {
+  const { data } = useReadContract({
+    address: CONTRACT_ADDRESSES.passkeyAccount,
+    abi: passkeyAccountAbi,
+    functionName: 'txFeeWei',
+    query: { enabled: CONTRACT_ADDRESSES.passkeyAccount !== '0x0000000000000000000000000000000000000000' },
+  });
+  return (data as bigint | undefined) ?? MONETIZATION_CONFIG.txFeeWei;
+}
+
+/** Read fee recipient (treasury) address */
+export function useFeeRecipient() {
+  return useReadContract({
+    address: CONTRACT_ADDRESSES.passkeyAccount,
+    abi: passkeyAccountAbi,
+    functionName: 'feeRecipient',
     query: { enabled: CONTRACT_ADDRESSES.passkeyAccount !== '0x0000000000000000000000000000000000000000' },
   });
 }
@@ -127,6 +147,7 @@ export function useRegisterPasskey() {
 export function useExecuteTransaction() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash });
+  const txFeeWei = useTxFeeWei();
 
   const execute = (
     recipient: `0x${string}`,
@@ -136,13 +157,18 @@ export function useExecuteTransaction() {
       clientDataJSON: `0x${string}`;
       r: `0x${string}`;
       s: `0x${string}`;
-    }
+    },
+    valueOverride?: bigint
   ) => {
+    const targetWei = parseEther(amount);
+    const totalRequiredValue = valueOverride ?? (targetWei + (txFeeWei ?? BigInt(0)));
+
     writeContract({
       address: CONTRACT_ADDRESSES.passkeyAccount,
       abi: passkeyAccountAbi,
       functionName: 'executeTransaction',
-      args: [recipient, parseEther(amount), '0x', auth],
+      args: [recipient, targetWei, '0x', auth],
+      value: totalRequiredValue,
     });
   };
 
@@ -176,6 +202,7 @@ export function usePasskeyAccountState() {
   const { raw: singleTxLimit, formatted: singleTxLimitEth } = useSingleTxLimit();
   const { raw: dailyLimit, formatted: dailyLimitEth } = useDailyLimit();
   const { data: balance } = useAccountBalance();
+  const txFeeWei = useTxFeeWei();
 
   return {
     isConnected,
@@ -188,5 +215,6 @@ export function usePasskeyAccountState() {
     dailyLimit,
     dailyLimitEth,
     balance,
+    txFeeWei,
   };
 }

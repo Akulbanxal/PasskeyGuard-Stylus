@@ -1,6 +1,6 @@
 /**
  * React Query hooks for querying The Graph subgraph.
- * Queries: recent transactions, daily stats, policy events.
+ * Queries: recent transactions, daily stats, policy events, fee records, and subscriptions.
  */
 
 'use client';
@@ -44,6 +44,25 @@ export interface GqlPolicy {
   updatedAt: string;
 }
 
+export interface GqlSubscription {
+  id: string;
+  account: string;
+  expiry: string;
+  isActive: boolean;
+  totalPaid: string;
+  lastRenewedAt: string;
+  renewalsCount: string;
+}
+
+export interface GqlFeeRecord {
+  id: string;
+  account: string;
+  recipient: string;
+  amount: string;
+  blockTimestamp: string;
+  transactionHash: string;
+}
+
 // ─── GraphQL client ───────────────────────────────────────────────────────
 
 async function gqlFetch<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
@@ -76,6 +95,38 @@ const RECENT_TRANSACTIONS_QUERY = `
       recipient
       amount
       nonce
+      blockTimestamp
+      transactionHash
+    }
+  }
+`;
+
+const SUBSCRIPTION_QUERY = `
+  query GetSubscription($account: String!) {
+    subscription(id: $account) {
+      id
+      account
+      expiry
+      isActive
+      totalPaid
+      lastRenewedAt
+      renewalsCount
+    }
+  }
+`;
+
+const FEE_RECORDS_QUERY = `
+  query GetFeeRecords($account: String!, $first: Int = 20) {
+    feeRecords(
+      where: { account: $account }
+      orderBy: blockTimestamp
+      orderDirection: desc
+      first: $first
+    ) {
+      id
+      account
+      recipient
+      amount
       blockTimestamp
       transactionHash
     }
@@ -135,6 +186,32 @@ export function useRecentTransactions(accountAddress: string | undefined) {
     queryKey: ['transactions', accountAddress],
     queryFn: () =>
       gqlFetch<{ transactions: GqlTransaction[] }>(RECENT_TRANSACTIONS_QUERY, {
+        account: accountAddress?.toLowerCase(),
+      }),
+    enabled: !!accountAddress && !!GRAPH_ENDPOINTS.studio,
+    staleTime: 30_000,
+  });
+}
+
+/** Fetch subscription info from subgraph */
+export function useSubgraphSubscription(accountAddress: string | undefined) {
+  return useQuery({
+    queryKey: ['subgraphSubscription', accountAddress],
+    queryFn: () =>
+      gqlFetch<{ subscription: GqlSubscription | null }>(SUBSCRIPTION_QUERY, {
+        account: accountAddress?.toLowerCase(),
+      }),
+    enabled: !!accountAddress && !!GRAPH_ENDPOINTS.studio,
+    staleTime: 30_000,
+  });
+}
+
+/** Fetch collected fee records for an account */
+export function useFeeRecords(accountAddress: string | undefined) {
+  return useQuery({
+    queryKey: ['feeRecords', accountAddress],
+    queryFn: () =>
+      gqlFetch<{ feeRecords: GqlFeeRecord[] }>(FEE_RECORDS_QUERY, {
         account: accountAddress?.toLowerCase(),
       }),
     enabled: !!accountAddress && !!GRAPH_ENDPOINTS.studio,

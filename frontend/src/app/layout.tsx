@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Syne } from "next/font/google";
 import "./globals.css";
 import { Web3Provider } from "../providers/Web3Provider";
+import { ThemeProvider } from "../providers/ThemeProvider";
 import AIAgent from "../components/AIAgent";
 
 const inter = Inter({
@@ -13,6 +14,13 @@ const inter = Inter({
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const syne = Syne({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["700", "800"],
   display: "swap",
 });
 
@@ -30,12 +38,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body>
-        <Web3Provider>
-          {children}
-          <AIAgent />
-        </Web3Provider>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${syne.variable}`} suppressHydrationWarning>
+      <body className="grain-overlay">
+        <ThemeProvider>
+          <Web3Provider>
+            {children}
+            <AIAgent />
+          </Web3Provider>
+        </ThemeProvider>
       </body>
     </html>
   );

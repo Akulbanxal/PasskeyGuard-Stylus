@@ -7,11 +7,15 @@ import "./interfaces/ISecp256r1Verifier.sol";
 import "./Base64Url.sol";
 
 /// @title PasskeyAccount
-/// @notice A smart-contract wallet secured by a WebAuthn P-256 passkey.
+/// @notice A smart-contract wallet secured by a WebAuthn P-256 passkey with automated fee monetization.
 ///         The Stylus WASM contract handles on-chain ECDSA verification.
 contract PasskeyAccount is IPasskeyAccount {
+    address public owner;
     ISecp256r1Verifier public verifier;
     IPolicyManager public policyManager;
+
+    address public feeRecipient;
+    uint256 public txFeeWei;
 
     bytes32 public pubKeyX;
     bytes32 public pubKeyY;
@@ -48,14 +52,17 @@ contract PasskeyAccount is IPasskeyAccount {
         address indexed executor
     );
 
+    /// @notice Emitted when a per-transaction protocol fee is collected.
+    event FeeCollected(address indexed account, address indexed recipient, uint256 amount, uint256 timestamp);
+
+    /// @notice Emitted when fee recipient is updated.
+    event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
+
+    /// @notice Emitted when transaction fee amount is updated.
+    event TxFeeUpdated(uint256 oldFee, uint256 newFee);
+
     /// @notice Emitted when ETH is received.
     event Received(address indexed from, uint256 amount);
-
-    constructor(address _verifier, address _policyManager) {
-        verifier = ISecp256r1Verifier(_verifier);
-        policyManager = IPolicyManager(_policyManager);
-        _status = _NOT_ENTERED;
-    }
 
     modifier nonReentrant() {
         require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
@@ -64,11 +71,41 @@ contract PasskeyAccount is IPasskeyAccount {
         _status = _NOT_ENTERED;
     }
 
+    modifier onlyOwner() {
+        require(msg.sender == owner || owner == address(0), "PasskeyAccount: only owner");
+        _;
+    }
+
+    constructor(address _verifier, address _policyManager, address _feeRecipient) {
+        require(_feeRecipient != address(0), "PasskeyAccount: invalid fee recipient");
+        owner = msg.sender;
+        verifier = ISecp256r1Verifier(_verifier);
+        policyManager = IPolicyManager(_policyManager);
+        feeRecipient = _feeRecipient;
+        txFeeWei = 1e14; // Default 0.0001 ETH protocol fee
+        _status = _NOT_ENTERED;
+        emit FeeRecipientUpdated(address(0), _feeRecipient);
+        emit TxFeeUpdated(0, txFeeWei);
+    }
+
     function registerPasskey(bytes32 x, bytes32 y) external {
         require(pubKeyX == bytes32(0) && pubKeyY == bytes32(0), "PasskeyAccount: already registered");
         pubKeyX = x;
         pubKeyY = y;
         emit PasskeyRegistered(x, y, address(this));
+    }
+
+    function setTxFee(uint256 newFee) external onlyOwner {
+        uint256 oldFee = txFeeWei;
+        txFeeWei = newFee;
+        emit TxFeeUpdated(oldFee, newFee);
+    }
+
+    function setFeeRecipient(address newRecipient) external onlyOwner {
+        require(newRecipient != address(0), "PasskeyAccount: invalid recipient");
+        address old = feeRecipient;
+        feeRecipient = newRecipient;
+        emit FeeRecipientUpdated(old, newRecipient);
     }
 
     function _verifyChallenge(
@@ -102,8 +139,9 @@ contract PasskeyAccount is IPasskeyAccount {
         uint256 amount,
         bytes calldata data,
         WebAuthnAuth calldata auth
-    ) external nonReentrant returns (bool executed) {
+    ) external payable nonReentrant returns (bool executed) {
         require(pubKeyX != bytes32(0) && pubKeyY != bytes32(0), "PasskeyAccount: not registered");
+        require(address(this).balance >= amount + txFeeWei, "PasskeyAccount: insufficient balance for tx + fee");
 
         // 1. Bind signature to specific transaction via challenge
         _verifyChallenge(auth.clientDataJSON, recipient, amount, nonce);
@@ -117,7 +155,7 @@ contract PasskeyAccount is IPasskeyAccount {
         require(isValidSignature, "PasskeyAccount: invalid signature");
         emit SignatureVerified(digest, address(this));
 
-        // 4. Check policy
+        // 4. Check policy (only transfer amount counts against policy limits, not infrastructure fee)
         (bool allowed, string memory reason) = policyManager.checkTransaction(
             address(this), recipient, amount, data
         );
@@ -127,17 +165,24 @@ contract PasskeyAccount is IPasskeyAccount {
         }
         emit PolicyApproved(recipient, amount);
 
-        // 5. Increment nonce atomically
+        // 5. Skim protocol fee & forward to feeRecipient (treasury)
+        if (txFeeWei > 0) {
+            (bool feeSuccess, ) = feeRecipient.call{value: txFeeWei}("");
+            require(feeSuccess, "PasskeyAccount: fee transfer failed");
+            emit FeeCollected(address(this), feeRecipient, txFeeWei, block.timestamp);
+        }
+
+        // 6. Increment nonce atomically
         uint256 currentNonce = nonce;
         nonce++;
 
-        // 6. Record spend on policy manager
+        // 7. Record spend on policy manager
         (bool ok, ) = address(policyManager).call(
             abi.encodeWithSignature("recordSpend(address,uint256)", address(this), amount)
         );
         require(ok, "PasskeyAccount: failed to record spend");
 
-        // 7. Execute
+        // 8. Execute main target call
         (bool success, ) = recipient.call{value: amount}(data);
         require(success, "PasskeyAccount: execution failed");
 

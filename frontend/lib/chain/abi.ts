@@ -1,6 +1,6 @@
 /**
  * Full ABI definitions for PasskeyGuard contracts.
- * Includes PasskeyAccount, PolicyManager, and Secp256r1Verifier (Stylus).
+ * Includes PasskeyAccount, PolicyManager, SubscriptionManager, and Secp256r1Verifier (Stylus).
  */
 
 export const passkeyAccountAbi = [
@@ -10,6 +10,8 @@ export const passkeyAccountAbi = [
   { name: 'pubKeyY',        inputs: [], outputs: [{ type: 'bytes32' }],   stateMutability: 'view',      type: 'function' },
   { name: 'verifier',       inputs: [], outputs: [{ type: 'address' }],   stateMutability: 'view',      type: 'function' },
   { name: 'policyManager',  inputs: [], outputs: [{ type: 'address' }],   stateMutability: 'view',      type: 'function' },
+  { name: 'feeRecipient',   inputs: [], outputs: [{ type: 'address' }],   stateMutability: 'view',      type: 'function' },
+  { name: 'txFeeWei',       inputs: [], outputs: [{ type: 'uint256' }],   stateMutability: 'view',      type: 'function' },
   // ── Writes ──────────────────────────────────────────────────
   {
     name: 'registerPasskey',
@@ -36,6 +38,20 @@ export const passkeyAccountAbi = [
       },
     ],
     outputs: [{ name: 'executed', type: 'bool' }],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    name: 'setTxFee',
+    inputs: [{ name: 'newFee', type: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    name: 'setFeeRecipient',
+    inputs: [{ name: 'newRecipient', type: 'address' }],
+    outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -45,14 +61,16 @@ export const passkeyAccountAbi = [
   { name: 'PolicyBlocked',     type: 'event', inputs: [{ name: 'recipient', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }, { name: 'reason', type: 'string' }] },
   { name: 'PolicyApproved',    type: 'event', inputs: [{ name: 'recipient', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }] },
   { name: 'TransactionExecuted', type: 'event', inputs: [{ name: 'recipient', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }, { name: 'data', type: 'bytes' }, { name: 'nonce', type: 'uint256' }, { name: 'executor', type: 'address', indexed: true }] },
+  { name: 'FeeCollected',      type: 'event', inputs: [{ name: 'account', type: 'address', indexed: true }, { name: 'recipient', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }, { name: 'timestamp', type: 'uint256' }] },
   { type: 'receive', stateMutability: 'payable' },
 ] as const;
 
 export const policyManagerAbi = [
   // ── State reads ──────────────────────────────────────────────
-  { name: 'singleTxLimit',      inputs: [], outputs: [{ type: 'uint256' }],  stateMutability: 'view', type: 'function' },
-  { name: 'dailyLimit',         inputs: [], outputs: [{ type: 'uint256' }],  stateMutability: 'view', type: 'function' },
-  { name: 'owner',              inputs: [], outputs: [{ type: 'address' }],  stateMutability: 'view', type: 'function' },
+  { name: 'singleTxLimit',        inputs: [], outputs: [{ type: 'uint256' }],  stateMutability: 'view', type: 'function' },
+  { name: 'dailyLimit',           inputs: [], outputs: [{ type: 'uint256' }],  stateMutability: 'view', type: 'function' },
+  { name: 'owner',                inputs: [], outputs: [{ type: 'address' }],  stateMutability: 'view', type: 'function' },
+  { name: 'subscriptionManager', inputs: [], outputs: [{ type: 'address' }],  stateMutability: 'view', type: 'function' },
   {
     name: 'trustedRecipients',
     inputs: [{ name: '', type: 'address' }],
@@ -82,6 +100,13 @@ export const policyManagerAbi = [
     stateMutability: 'nonpayable',
     type: 'function',
   },
+  {
+    name: 'setSubscriptionManager',
+    inputs: [{ name: '_subscriptionManager', type: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
   // ── Events ──────────────────────────────────────────────────
   { name: 'SingleTxLimitSet',   type: 'event', inputs: [{ name: 'by', type: 'address', indexed: true }, { name: 'oldLimit', type: 'uint256' }, { name: 'newLimit', type: 'uint256' }] },
   { name: 'DailyLimitSet',      type: 'event', inputs: [{ name: 'by', type: 'address', indexed: true }, { name: 'oldLimit', type: 'uint256' }, { name: 'newLimit', type: 'uint256' }] },
@@ -89,6 +114,53 @@ export const policyManagerAbi = [
   { name: 'PolicyApproved',     type: 'event', inputs: [{ name: 'account', type: 'address', indexed: true }, { name: 'recipient', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }] },
   { name: 'SpendRecorded',      type: 'event', inputs: [{ name: 'account', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }, { name: 'dayBucket', type: 'uint256' }, { name: 'totalDailySpent', type: 'uint256' }] },
   { name: 'OwnershipTransferred', type: 'event', inputs: [{ name: 'previousOwner', type: 'address', indexed: true }, { name: 'newOwner', type: 'address', indexed: true }] },
+] as const;
+
+export const subscriptionManagerAbi = [
+  // ── State reads ──────────────────────────────────────────────
+  { name: 'monthlyFeeWei',      inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { name: 'treasury',           inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view', type: 'function' },
+  { name: 'owner',              inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view', type: 'function' },
+  {
+    name: 'subscriptionExpiry',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    name: 'isActive',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // ── Writes ──────────────────────────────────────────────────
+  {
+    name: 'subscribe',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    name: 'setMonthlyFee',
+    inputs: [{ name: 'newFee', type: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    name: 'setTreasury',
+    inputs: [{ name: 'newTreasury', type: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // ── Events ──────────────────────────────────────────────────
+  { name: 'SubscriptionRenewed', type: 'event', inputs: [{ name: 'account', type: 'address', indexed: true }, { name: 'newExpiry', type: 'uint256' }, { name: 'amountPaid', type: 'uint256' }] },
+  { name: 'MonthlyFeeSet',       type: 'event', inputs: [{ name: 'oldFee', type: 'uint256' }, { name: 'newFee', type: 'uint256' }] },
+  { name: 'TreasurySet',         type: 'event', inputs: [{ name: 'oldTreasury', type: 'address', indexed: true }, { name: 'newTreasury', type: 'address', indexed: true }] },
 ] as const;
 
 /** Stylus P-256 Verifier ABI (WASM contract — same interface as Solidity) */

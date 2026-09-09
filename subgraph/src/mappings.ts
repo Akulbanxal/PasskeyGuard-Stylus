@@ -17,7 +17,12 @@ import {
 import {
   PasskeyRegistered,
   TransactionExecuted,
+  FeeCollected,
 } from "../../generated/PasskeyAccount/PasskeyAccount";
+
+import {
+  SubscriptionRenewed,
+} from "../../generated/SubscriptionManager/SubscriptionManager";
 
 import {
   Policy,
@@ -27,15 +32,15 @@ import {
   DailyStats,
   PasskeyAccount,
   Transaction,
+  FeeRecord,
+  Subscription,
 } from "../../generated/schema";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getDayString(timestamp: BigInt): string {
-  // Simple UNIX day -> date string
   const daySeconds = BigInt.fromI32(86400);
   const dayNumber = timestamp.div(daySeconds).toI32();
-  // Approximate: day 0 = 1970-01-01
   return "day-" + dayNumber.toString();
 }
 
@@ -120,7 +125,6 @@ export function handlePolicyBlocked(event: PolicyBlocked): void {
   policyEvent.transactionHash = event.transaction.hash;
   policyEvent.save();
 
-  // Update daily stats
   const stats = getOrCreateDailyStats(event);
   stats.blockedCount = stats.blockedCount.plus(BigInt.fromI32(1));
   stats.save();
@@ -141,7 +145,6 @@ export function handlePolicyApproved(event: PolicyApproved): void {
 }
 
 export function handleOwnershipTransferred(event: OwnershipTransferred): void {
-  // Re-use policy entity to track current owner if needed
   const policy = getOrCreatePolicy();
   policy.updatedAt = event.block.timestamp;
   policy.updatedAtBlock = event.block.number;
@@ -166,7 +169,6 @@ export function handlePasskeyRegistered(event: PasskeyRegistered): void {
 }
 
 export function handleTransactionExecuted(event: TransactionExecuted): void {
-  // Load or lazy-create account
   const accountId = event.address.toHexString();
   let account = PasskeyAccount.load(accountId);
   if (!account) {
@@ -181,7 +183,6 @@ export function handleTransactionExecuted(event: TransactionExecuted): void {
   account.totalTransactions = account.totalTransactions.plus(BigInt.fromI32(1));
   account.save();
 
-  // Create transaction record
   const txId = event.transaction.hash.concatI32(event.logIndex.toI32());
   const tx = new Transaction(txId);
   tx.account = accountId;
@@ -194,9 +195,39 @@ export function handleTransactionExecuted(event: TransactionExecuted): void {
   tx.transactionHash = event.transaction.hash;
   tx.save();
 
-  // Update daily stats
   const stats = getOrCreateDailyStats(event);
   stats.txCount = stats.txCount.plus(BigInt.fromI32(1));
   stats.totalVolume = stats.totalVolume.plus(event.params.amount);
   stats.save();
+}
+
+export function handleFeeCollected(event: FeeCollected): void {
+  const id = event.transaction.hash.concatI32(event.logIndex.toI32());
+  const feeRecord = new FeeRecord(id);
+  feeRecord.account = event.params.account;
+  feeRecord.recipient = event.params.recipient;
+  feeRecord.amount = event.params.amount;
+  feeRecord.blockNumber = event.block.number;
+  feeRecord.blockTimestamp = event.params.timestamp;
+  feeRecord.transactionHash = event.transaction.hash;
+  feeRecord.save();
+}
+
+// ─── SubscriptionManager Handlers ─────────────────────────────────────────
+
+export function handleSubscriptionRenewed(event: SubscriptionRenewed): void {
+  const id = event.params.account.toHexString();
+  let sub = Subscription.load(id);
+  if (!sub) {
+    sub = new Subscription(id);
+    sub.account = event.params.account;
+    sub.totalPaid = BigInt.fromI32(0);
+    sub.renewalsCount = BigInt.fromI32(0);
+  }
+  sub.expiry = event.params.newExpiry;
+  sub.isActive = event.params.newExpiry.ge(event.block.timestamp);
+  sub.totalPaid = sub.totalPaid.plus(event.params.amountPaid);
+  sub.lastRenewedAt = event.block.timestamp;
+  sub.renewalsCount = sub.renewalsCount.plus(BigInt.fromI32(1));
+  sub.save();
 }

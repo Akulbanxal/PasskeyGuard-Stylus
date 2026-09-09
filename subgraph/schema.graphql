@@ -1,6 +1,6 @@
 """
 PasskeyGuard Subgraph Schema
-Indexes: PolicyManager + PasskeyAccount events on Arbitrum Sepolia
+Indexes: PolicyManager + PasskeyAccount + SubscriptionManager events on Arbitrum Sepolia
 """
 
 # ─── PolicyManager Entities ────────────────────────────────────────────────
@@ -66,6 +66,28 @@ type Transaction @entity(immutable: true) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+type FeeRecord @entity(immutable: true) {
+  id: Bytes!                    # txHash + logIndex
+  account: Bytes!
+  recipient: Bytes!
+  amount: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+# ─── SubscriptionManager Entities ─────────────────────────────────────────
+
+type Subscription @entity {
+  id: ID!                       # account address
+  account: Bytes!
+  expiry: BigInt!
+  isActive: Boolean!
+  totalPaid: BigInt!
+  lastRenewedAt: BigInt!
+  renewalsCount: BigInt!
 }
 
 # ─── Daily Stats ─────────────────────────────────────────────────────────
