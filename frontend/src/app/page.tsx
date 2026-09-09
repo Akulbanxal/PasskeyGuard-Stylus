@@ -15,6 +15,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import Spinner, { SpinnerInline } from '../components/Spinner';
 import InfiniteMarquee from '../components/InfiniteMarquee';
 import FlippingWord from '../components/FlippingWord';
+import OrbitalFlow from '../components/OrbitalFlow';
 import { CONTRACT_ADDRESSES } from '../../lib/chain/config';
 
 const DEFAULT_SINGLE_TX_LIMIT_ETH = 1000;
@@ -320,94 +321,14 @@ export default function App() {
                     </motion.div>
                   </div>
 
-                  {/* Right: Animated Flow Diagram */}
+                  {/* Right: Orbital Flow Diagram */}
                   <motion.div
                     initial={{ opacity: 0, x: 40 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, delay: 0.3 }}
                     style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                   >
-                    <div style={{
-                      background: 'var(--card-bg)',
-                      border: '1px solid var(--card-border)',
-                      borderRadius: 20, backdropFilter: 'blur(24px)',
-                      WebkitBackdropFilter: 'blur(24px)',
-                      padding: '1.75rem', width: '100%', maxWidth: 400,
-                      display: 'flex', flexDirection: 'column', gap: '0.875rem',
-                      position: 'relative', overflow: 'hidden',
-                    }}>
-                      {/* Ambient corner glow — liquid-pass inspired */}
-                      <motion.div
-                        animate={{ opacity: [0.4, 0.75, 0.4], scale: [1, 1.08, 1] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                        style={{
-                          position: 'absolute', top: -40, left: -40,
-                          width: 180, height: 180, borderRadius: '50%',
-                          background: 'radial-gradient(circle, rgba(0,212,190,0.18) 0%, transparent 70%)',
-                          filter: 'blur(20px)', pointerEvents: 'none',
-                        }}
-                      />
-                      {/* Card header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', position: 'relative' }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
-                          Transaction Flow
-                        </div>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--teal)', background: 'var(--teal-dim)', border: '1px solid rgba(0,212,190,0.22)', borderRadius: 100, padding: '0.2rem 0.6rem' }}>
-                          LIVE
-                        </span>
-                      </div>
-                      {[
-                        { icon: '👆', step: 'Biometric Auth',  detail: 'Face ID / Touch ID',          color: '#00D4BE', delay: 0   },
-                        { icon: '🔏', step: 'P-256 Sign',      detail: 'Secure Enclave',               color: '#4F8EF7', delay: 0.4 },
-                        { icon: '⚡', step: 'Stylus Verify',   detail: 'On-chain WASM',               color: '#8B5CF6', delay: 0.8 },
-                        { icon: '💎', step: 'Fee Skim',        detail: `${protocolFeeEth} ETH → Treasury`, color: '#EC4899', delay: 1.0 },
-                        { icon: '🛡️', step: 'Policy Check',   detail: 'PolicyManager.sol',            color: '#10B981', delay: 1.2 },
-                        { icon: '🚀', step: 'Execute',         detail: 'Arbitrum L2',                  color: '#F59E0B', delay: 1.6 },
-                      ].map((item, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -16 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.5, delay: 0.4 + item.delay * 0.35 }}
-                          whileHover={{ x: 4, transition: { duration: 0.15 } }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '0.875rem',
-                            padding: '0.65rem 0.875rem',
-                            background: `${item.color}0A`,
-                            border: `1px solid ${item.color}22`,
-                            borderRadius: 10, cursor: 'default',
-                            transition: 'border-color 0.2s, background 0.2s',
-                            position: 'relative', overflow: 'hidden',
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = `${item.color}55`;
-                            e.currentTarget.style.background = `${item.color}16`;
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = `${item.color}22`;
-                            e.currentTarget.style.background = `${item.color}0A`;
-                          }}
-                        >
-                          {/* Scan-line sweep on hover — liquid-pass inspired terminal effect */}
-                          <div style={{
-                            position: 'absolute', inset: 0, pointerEvents: 'none',
-                            background: `linear-gradient(90deg, transparent 0%, ${item.color}12 50%, transparent 100%)`,
-                            opacity: 0,
-                            transition: 'opacity 0.3s',
-                          }} className="scanline-sweep" />
-                          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{item.icon}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-1)' }}>{item.step}</div>
-                            <div style={{ fontSize: '0.67rem', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.detail}</div>
-                          </div>
-                          <motion.div
-                            style={{ width: 7, height: 7, borderRadius: '50%', background: item.color, flexShrink: 0 }}
-                            animate={{ opacity: [0.4, 1, 0.4], scale: [0.85, 1.15, 0.85] }}
-                            transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.28 }}
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
+                    <OrbitalFlow protocolFeeEth={protocolFeeEth} />
                   </motion.div>
                 </div>
               </section>
